@@ -23,8 +23,8 @@ preload_models()
 
 print("Bark models preloaded")
 
-def generate_audio_file(text, lang='fr'):
-    audio_array = generate_audio(text, device=device)
+def generate_audio_file(text):
+    audio_array = generate_audio(text)
     with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as temp_file:
         write_wav(temp_file.name, SAMPLE_RATE, audio_array)
         return temp_file.name
