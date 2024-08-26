@@ -44,7 +44,7 @@ def extract_wiki_content(url):
         return "Erreur : Page non trouvée"
 
 @app.route('/generate_audio', methods=['POST'])
-def generate_audio():
+def generate_audio_from_wiki():
     data = request.json
     wiki_url = data.get('wiki_url')
     
