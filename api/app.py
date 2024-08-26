@@ -2,15 +2,19 @@ from flask import Flask, request, jsonify, send_file
 import os
 import wikipedia
 from urllib.parse import urlparse
-from gtts import gTTS
 import tempfile
+from bark import SAMPLE_RATE, generate_audio, preload_models
+from scipy.io.wavfile import write as write_wav
 
 app = Flask(__name__)
 
+# Preload Bark models
+preload_models()
+
 def generate_audio_file(text, lang='fr'):
-    tts = gTTS(text=text, lang=lang)
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as temp_file:
-        tts.save(temp_file.name)
+    audio_array = generate_audio(text)
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as temp_file:
+        write_wav(temp_file.name, SAMPLE_RATE, audio_array)
         return temp_file.name
 
 def extract_wiki_content(url):
@@ -47,7 +51,7 @@ def generate_audio():
     print("Audio generated :", audio_file)
     
     # Envoyer le fichier audio
-    return send_file(audio_file, mimetype='audio/mp3', as_attachment=True, download_name='wiki_audio.mp3')
+    return send_file(audio_file, mimetype='audio/wav', as_attachment=True, download_name='wiki_audio.wav')
 
 @app.after_request
 def cleanup(response):
