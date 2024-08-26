@@ -17,8 +17,11 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using device: {device}")
 
+print("Preloading Bark models")
 # Preload Bark models
 preload_models()
+
+print("Bark models preloaded")
 
 def generate_audio_file(text, lang='fr'):
     audio_array = generate_audio(text, device=device)
