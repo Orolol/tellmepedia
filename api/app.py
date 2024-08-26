@@ -24,7 +24,9 @@ preload_models()
 print("Bark models preloaded")
 
 def generate_audio_file(text):
+    print("Generating audio file")
     audio_array = generate_audio(text)
+    print("Audio file generated")
     with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as temp_file:
         write_wav(temp_file.name, SAMPLE_RATE, audio_array)
         return temp_file.name
@@ -43,7 +45,7 @@ def extract_wiki_content(url):
     except wikipedia.exceptions.PageError:
         return "Erreur : Page non trouvée"
 
-def split_content_into_chunks(content, chunk_size=2000):
+def split_content_into_chunks(content, chunk_size=100):
     return [content[i:i+chunk_size] for i in range(0, len(content), chunk_size)]
 
 @app.route('/generate_audio', methods=['POST'])
@@ -68,8 +70,11 @@ def generate_audio_from_wiki():
     audio_files = []
     for i, chunk in enumerate(chunks):
         print(f"Traitement du chunk {i+1}/{len(chunks)}")
+        print(chunk)
         audio_file = generate_audio_file(chunk)
         audio_files.append(audio_file)
+    
+    print("Audio genérés :", audio_files)
     
     # Fusionner les fichiers audio
     with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as output_file:
