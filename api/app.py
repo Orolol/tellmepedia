@@ -37,7 +37,9 @@ def extract_wiki_content(url):
     try:
         # Récupérer le contenu de la page Wikipédia
         page = wikipedia.page(title)
-        return page.content
+        # Limiter le contenu à environ 500 tokens (environ 2000 caractères)
+        content = page.content[:2000]
+        return content
     except wikipedia.exceptions.DisambiguationError as e:
         return f"Erreur : Page ambiguë. Options possibles : {e.options}"
     except wikipedia.exceptions.PageError:
@@ -63,14 +65,19 @@ def generate_audio_from_wiki():
     print("Audio generated :", audio_file)
     
     # Envoyer le fichier audio
-    return send_file(audio_file, mimetype='audio/wav', as_attachment=True, download_name='wiki_audio.wav')
+    response = send_file(audio_file, mimetype='audio/wav', as_attachment=True, download_name='wiki_audio.wav')
+    
+    # Ajouter le nom du fichier temporaire à la réponse pour le nettoyage
+    response.headers['X-Temp-File'] = audio_file
+    
+    return response
 
 @app.after_request
 def cleanup(response):
     # Supprimer le fichier temporaire après l'envoi
-    if response.headers.get('Content-Disposition'):
-        filename = response.headers['Content-Disposition'].split('filename=')[1].strip('"')
-        os.remove(filename)
+    temp_file = response.headers.get('X-Temp-File')
+    if temp_file and os.path.exists(temp_file):
+        os.remove(temp_file)
     return response
 
 if __name__ == '__main__':
