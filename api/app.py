@@ -3,16 +3,25 @@ import os
 import wikipedia
 from urllib.parse import urlparse
 import tempfile
+import torch
 from bark import SAMPLE_RATE, generate_audio, preload_models
 from scipy.io.wavfile import write as write_wav
+import warnings
 
 app = Flask(__name__)
+
+# Suppress specific warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
+
+# Check for GPU availability
+device = "cuda" if torch.cuda.is_available() else "cpu"
+print(f"Using device: {device}")
 
 # Preload Bark models
 preload_models()
 
 def generate_audio_file(text, lang='fr'):
-    audio_array = generate_audio(text)
+    audio_array = generate_audio(text, device=device)
     with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as temp_file:
         write_wav(temp_file.name, SAMPLE_RATE, audio_array)
         return temp_file.name
