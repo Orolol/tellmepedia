@@ -7,6 +7,8 @@ import torch
 from bark import SAMPLE_RATE, generate_audio, preload_models
 from scipy.io.wavfile import write as write_wav
 import warnings
+import nltk
+from nltk.tokenize import sent_tokenize
 
 app = Flask(__name__)
 
@@ -45,8 +47,23 @@ def extract_wiki_content(url):
     except wikipedia.exceptions.PageError:
         return "Erreur : Page non trouvée"
 
-def split_content_into_chunks(content, chunk_size=100):
-    return [content[i:i+chunk_size] for i in range(0, len(content), chunk_size)]
+def split_content_into_chunks(content, max_chunk_size=2000):
+    nltk.download('punkt', quiet=True)
+    sentences = sent_tokenize(content)
+    chunks = []
+    current_chunk = ""
+    
+    for sentence in sentences:
+        if len(current_chunk) + len(sentence) <= max_chunk_size:
+            current_chunk += sentence + " "
+        else:
+            chunks.append(current_chunk.strip())
+            current_chunk = sentence + " "
+    
+    if current_chunk:
+        chunks.append(current_chunk.strip())
+    
+    return chunks
 
 @app.route('/generate_audio', methods=['POST'])
 def generate_audio_from_wiki():
@@ -70,7 +87,7 @@ def generate_audio_from_wiki():
     audio_files = []
     for i, chunk in enumerate(chunks):
         print(f"Traitement du chunk {i+1}/{len(chunks)}")
-        print(chunk)
+        print(f"Longueur du chunk : {len(chunk)} caractères")
         audio_file = generate_audio_file(chunk)
         audio_files.append(audio_file)
     
