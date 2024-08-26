@@ -32,13 +32,19 @@ def generate_audio():
     data = request.json
     wiki_url = data.get('wiki_url')
     
+    print(wiki_url)
+    
     if not wiki_url:
         return jsonify({"error": "URL Wikipedia manquante"}), 400
     
     content = extract_wiki_content(wiki_url)
     
+    print("Contenu extrait :", content)
+    
     # Générer l'audio à partir du contenu extrait
     audio_file = generate_audio_file(content)
+    
+    print("Audio generated :", audio_file)
     
     # Envoyer le fichier audio
     return send_file(audio_file, mimetype='audio/mp3', as_attachment=True, download_name='wiki_audio.mp3')
