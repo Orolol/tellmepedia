@@ -35,15 +35,16 @@ def extract_wiki_content(url):
     title = path.split('/')[-1]
     
     try:
-        # Récupérer le contenu de la page Wikipédia
+        # Récupérer le contenu complet de la page Wikipédia
         page = wikipedia.page(title)
-        # Limiter le contenu à environ 500 tokens (environ 2000 caractères)
-        content = page.content[:2000]
-        return content
+        return page.content
     except wikipedia.exceptions.DisambiguationError as e:
         return f"Erreur : Page ambiguë. Options possibles : {e.options}"
     except wikipedia.exceptions.PageError:
         return "Erreur : Page non trouvée"
+
+def split_content_into_chunks(content, chunk_size=2000):
+    return [content[i:i+chunk_size] for i in range(0, len(content), chunk_size)]
 
 @app.route('/generate_audio', methods=['POST'])
 def generate_audio_from_wiki():
@@ -57,18 +58,43 @@ def generate_audio_from_wiki():
     
     content = extract_wiki_content(wiki_url)
     
-    print("Contenu extrait :", content)
+    if content.startswith("Erreur :"):
+        return jsonify({"error": content}), 400
     
-    # Générer l'audio à partir du contenu extrait
-    audio_file = generate_audio_file(content)
+    chunks = split_content_into_chunks(content)
     
-    print("Audio generated :", audio_file)
+    print(f"Nombre de chunks : {len(chunks)}")
     
-    # Envoyer le fichier audio
-    response = send_file(audio_file, mimetype='audio/wav', as_attachment=True, download_name='wiki_audio.wav')
+    audio_files = []
+    for i, chunk in enumerate(chunks):
+        print(f"Traitement du chunk {i+1}/{len(chunks)}")
+        audio_file = generate_audio_file(chunk)
+        audio_files.append(audio_file)
+    
+    # Fusionner les fichiers audio
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as output_file:
+        output_filename = output_file.name
+        
+    # Utiliser ffmpeg pour concaténer les fichiers audio
+    concat_file = 'concat.txt'
+    with open(concat_file, 'w') as f:
+        for audio_file in audio_files:
+            f.write(f"file '{audio_file}'\n")
+    
+    os.system(f"ffmpeg -f concat -safe 0 -i {concat_file} -c copy {output_filename}")
+    
+    # Nettoyer les fichiers temporaires
+    os.remove(concat_file)
+    for audio_file in audio_files:
+        os.remove(audio_file)
+    
+    print("Audio fusionné généré :", output_filename)
+    
+    # Envoyer le fichier audio fusionné
+    response = send_file(output_filename, mimetype='audio/wav', as_attachment=True, download_name='wiki_audio.wav')
     
     # Ajouter le nom du fichier temporaire à la réponse pour le nettoyage
-    response.headers['X-Temp-File'] = audio_file
+    response.headers['X-Temp-File'] = output_filename
     
     return response
 
