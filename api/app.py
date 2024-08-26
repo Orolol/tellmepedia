@@ -1,9 +1,17 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 import os
 import wikipedia
 from urllib.parse import urlparse
+from gtts import gTTS
+import tempfile
 
 app = Flask(__name__)
+
+def generate_audio_file(text, lang='fr'):
+    tts = gTTS(text=text, lang=lang)
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as temp_file:
+        tts.save(temp_file.name)
+        return temp_file.name
 
 def extract_wiki_content(url):
     # Extraire le titre de la page à partir de l'URL
@@ -29,9 +37,19 @@ def generate_audio():
     
     content = extract_wiki_content(wiki_url)
     
-    # Pour l'instant, nous retournons le contenu extrait
-    # Plus tard, nous ajouterons ici la logique pour générer l'audio
-    return jsonify({"content": content}), 200
+    # Générer l'audio à partir du contenu extrait
+    audio_file = generate_audio_file(content)
+    
+    # Envoyer le fichier audio
+    return send_file(audio_file, mimetype='audio/mp3', as_attachment=True, download_name='wiki_audio.mp3')
+
+@app.after_request
+def cleanup(response):
+    # Supprimer le fichier temporaire après l'envoi
+    if response.headers.get('Content-Disposition'):
+        filename = response.headers['Content-Disposition'].split('filename=')[1].strip('"')
+        os.remove(filename)
+    return response
 
 if __name__ == '__main__':
     app.run(debug=True)
