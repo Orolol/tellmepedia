@@ -17,7 +17,6 @@ from nltk.tokenize import sent_tokenize
 from dotenv import load_dotenv
 from openai import OpenAI
 
-load_dotenv()
 
 def get_safe_filename(title, lang):
     safe_title = "".join([c for c in title if c.isalnum() or c in (' ', '-', '_')]).rstrip()
@@ -77,7 +76,7 @@ def generate_audio_file(sentences, lang='en'):
     # Map language codes to Bark's speaker presets
     lang_to_speaker = {
         'en': 'v2/en_speaker_6',
-        'fr': 'v2/fr_speaker_5',
+        'fr': 'v2/fr_speaker_1',
         'de': 'v2/de_speaker_6',
         'es': 'v2/es_speaker_6',
         'it': 'v2/it_speaker_7',
@@ -136,11 +135,13 @@ def rewrite_content_with_gpt4(content):
 
 Instructions:
 Make the text more suitable for oral reading, and more entertaining to listen.
-Make the text more informative and engaging, like a podcast or a documentary
-Preserve all the information and preserve original text language
-Make the sentences shorter. Bark can only generate audio up to 13 seconds, so ensure sentences fit within this maximum duration.
+Make the text more informative and engaging, like a podcast or a documentary.
+Preserve all the information and details. Preserve original text language
+Make the sentences shorter. If a sentences is too long, break it into multiple sentences. Sentences shouldn't be more than 30 words.
+If a category of chapter seems empty, remove it.
+Do not include wikipedia specific categories, like see also, or other references.
 
-Rewritten content:"""
+Original Article :"""
 
     response = client.chat.completions.create(
         model="gpt-4o",
@@ -149,7 +150,7 @@ Rewritten content:"""
             {"role": "user", "content": prompt}
         ],
         n=1,
-        temperature=0.4,
+        temperature=0.7,
     )
 
     return response.choices[0].message.content.strip()
@@ -203,13 +204,9 @@ def generate_audio_from_wiki():
     
     print("Audio fusionné généré :", output_filename)
     
-    # Save the generated audio file
     save_audio(output_filename, safe_filename)
-    
-    # Envoyer le fichier audio fusionné
+
     response = send_file(output_filename, mimetype='audio/wav', as_attachment=True, download_name='wiki_audio.wav')
-    
-    # Ajouter le nom du fichier temporaire à la réponse pour le nettoyage
     response.headers['X-Temp-File'] = output_filename
     
     return response
