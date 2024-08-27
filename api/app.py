@@ -1,5 +1,8 @@
 from flask import Flask, request, jsonify, send_file
 import os
+os.environ["SUNO_OFFLOAD_CPU"] = "True"
+os.environ["SUNO_USE_SMALL_MODELS"] = "True"
+
 import wikipedia
 import tempfile
 import torch
@@ -8,6 +11,11 @@ from scipy.io.wavfile import write as write_wav
 import warnings
 import nltk
 from nltk.tokenize import sent_tokenize
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
 
 app = Flask(__name__)
 
