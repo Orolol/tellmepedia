@@ -1,10 +1,12 @@
 from flask import Flask, request, jsonify, send_file
 import os
+import pathlib
 os.environ["SUNO_OFFLOAD_CPU"] = "True"
 os.environ["SUNO_USE_SMALL_MODELS"] = "True"
 
 import wikipedia
 import tempfile
+import hashlib
 import torch
 from bark import SAMPLE_RATE, generate_audio, preload_models, semantic_to_waveform
 from scipy.io.wavfile import write as write_wav
