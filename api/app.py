@@ -1,7 +1,6 @@
 from flask import Flask, request, jsonify, send_file
 import os
 import wikipedia
-from urllib.parse import urlparse, unquote
 import tempfile
 import torch
 from bark import SAMPLE_RATE, generate_audio, preload_models
@@ -51,11 +50,7 @@ def generate_audio_file(text, lang='en'):
         write_wav(temp_file.name, SAMPLE_RATE, audio_array)
         return temp_file.name
 
-def extract_wiki_content(url, lang='en'):
-    # Extract the title from the URL and decode it
-    path = urlparse(url).path
-    title = unquote(path.split('/')[-1])
-    
+def extract_wiki_content(title, lang='en'):
     try:
         # Set the language for Wikipedia
         wikipedia.set_lang(lang)
@@ -76,16 +71,16 @@ def split_content_into_chunks(content):
 @app.route('/generate_audio', methods=['POST'])
 def generate_audio_from_wiki():
     data = request.json
-    wiki_url = data.get('wiki_url')
+    title = data.get('title')
     lang = data.get('lang', 'en')  # Default to English if not specified
     
-    print(f"Wikipedia URL: {wiki_url}")
+    print(f"Wikipedia Title: {title}")
     print(f"Language: {lang}")
     
-    if not wiki_url:
-        return jsonify({"error": "Missing Wikipedia URL"}), 400
+    if not title:
+        return jsonify({"error": "Missing Wikipedia page title"}), 400
     
-    content = extract_wiki_content(wiki_url, lang)
+    content = extract_wiki_content(title, lang)
     
     if content.startswith("Error:"):
         return jsonify({"error": content}), 400
