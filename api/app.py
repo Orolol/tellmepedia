@@ -109,15 +109,14 @@ Instructions:
 Rewritten content:"""
 
     response = openai.ChatCompletion.create(
-        model="gpt-4",
+        model="gpt-4o",
         messages=[
             {"role": "system", "content": "You are a helpful assistant that rewrites Wikipedia content for audio narration."},
             {"role": "user", "content": prompt}
         ],
-        max_tokens=4000,
         n=1,
         stop=None,
-        temperature=0.7,
+        temperature=0.4,
     )
 
     return response.choices[0].message['content'].strip()
