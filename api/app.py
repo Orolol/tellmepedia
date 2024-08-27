@@ -98,9 +98,11 @@ def generate_audio_from_wiki():
     data = request.json
     title = data.get('title')
     lang = data.get('lang', 'en')  # Default to English if not specified
+    size = data.get('size', 0)  # Default to 0 (full article) if not specified
     
     print(f"Wikipedia Title: {title}")
     print(f"Language: {lang}")
+    print(f"Size: {size}")
     
     if not title:
         return jsonify({"error": "Missing Wikipedia page title"}), 400
@@ -111,6 +113,9 @@ def generate_audio_from_wiki():
         return jsonify({"error": content}), 400
     
     sentences = split_content_into_chunks(content)
+    
+    if size > 0:
+        sentences = sentences[:size]
     
     print(f"Nombre de phrases : {len(sentences)}")
     
