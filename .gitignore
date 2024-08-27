@@ -1,3 +1,4 @@
 .env
 *.pyc
-.aider*
+*.aider.*
+/saved*
