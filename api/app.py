@@ -13,8 +13,12 @@ import warnings
 import nltk
 from nltk.tokenize import sent_tokenize
 from dotenv import load_dotenv
+import openai
 
 load_dotenv()
+
+# Set up OpenAI API key
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 
 
@@ -92,6 +96,32 @@ def split_content_into_chunks(content):
     sentences = sent_tokenize(content)
     return sentences
 
+def rewrite_content_with_gpt4(content):
+    prompt = f"""Rewrite the following Wikipedia content:
+
+{content}
+
+Instructions:
+1) Make the text more suitable for oral reading
+2) Preserve all the information
+3) Make the sentences shorter. Bark can only generate audio up to 13 seconds, so ensure sentences fit within this maximum duration.
+
+Rewritten content:"""
+
+    response = openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant that rewrites Wikipedia content for audio narration."},
+            {"role": "user", "content": prompt}
+        ],
+        max_tokens=4000,
+        n=1,
+        stop=None,
+        temperature=0.7,
+    )
+
+    return response.choices[0].message['content'].strip()
+
 @app.route('/generate_audio', methods=['POST'])
 def generate_audio_from_wiki():
     data = request.json
@@ -111,7 +141,10 @@ def generate_audio_from_wiki():
     if content.startswith("Error:"):
         return jsonify({"error": content}), 400
     
-    sentences = split_content_into_chunks(content)
+    # Rewrite content using GPT-4
+    rewritten_content = rewrite_content_with_gpt4(content)
+    
+    sentences = split_content_into_chunks(rewritten_content)
     
     if size > 0:
         sentences = sentences[:size]
