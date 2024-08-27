@@ -6,8 +6,9 @@ os.environ["SUNO_USE_SMALL_MODELS"] = "True"
 import wikipedia
 import tempfile
 import torch
-from bark import SAMPLE_RATE, generate_audio, preload_models
+from bark import SAMPLE_RATE, generate_audio, preload_models, generate_text_semantic, semantic_to_waveform
 from scipy.io.wavfile import write as write_wav
+import numpy as np
 import warnings
 import nltk
 from nltk.tokenize import sent_tokenize
@@ -34,9 +35,8 @@ preload_models()
 
 print("Bark models preloaded")
 
-def generate_audio_file(text, lang='en'):
+def generate_audio_file(sentences, lang='en'):
     print(f"Generating audio file for language: {lang}")
-    print("Text:", text)
     
     # Map language codes to Bark's speaker presets
     lang_to_speaker = {
@@ -50,12 +50,29 @@ def generate_audio_file(text, lang='en'):
         # Add more languages and corresponding speaker presets as needed
     }
     
-    speaker = lang_to_speaker.get(lang, 'v2/en_speaker_6')  # Default to English if language not found
+    SPEAKER = lang_to_speaker.get(lang, 'v2/en_speaker_6')  # Default to English if language not found
+    GEN_TEMP = 0.6
+    silence = np.zeros(int(0.25 * SAMPLE_RATE))  # quarter second of silence
+
+    pieces = []
+    for sentence in sentences:
+        print(f"Processing sentence: {sentence}")
+        semantic_tokens = generate_text_semantic(
+            sentence,
+            history_prompt=SPEAKER,
+            temp=GEN_TEMP,
+            min_eos_p=0.05,  # this controls how likely the generation is to end
+        )
+
+        audio_array = semantic_to_waveform(semantic_tokens, history_prompt=SPEAKER)
+        pieces += [audio_array, silence.copy()]
+
+    # Concatenate all audio pieces
+    final_audio = np.concatenate(pieces)
     
-    audio_array = generate_audio(text, history_prompt=speaker)
     print("Audio file generated")
     with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as temp_file:
-        write_wav(temp_file.name, SAMPLE_RATE, audio_array)
+        write_wav(temp_file.name, SAMPLE_RATE, final_audio)
         return temp_file.name
 
 def extract_wiki_content(title, lang='en'):
@@ -93,35 +110,11 @@ def generate_audio_from_wiki():
     if content.startswith("Error:"):
         return jsonify({"error": content}), 400
     
-    chunks = split_content_into_chunks(content)
+    sentences = split_content_into_chunks(content)
     
-    print(f"Nombre de chunks : {len(chunks)}")
+    print(f"Nombre de phrases : {len(sentences)}")
     
-    audio_files = []
-    for i, chunk in enumerate(chunks):
-        print(f"Processing chunk {i+1}/{len(chunks)}")
-        print(f"Chunk length: {len(chunk)} characters")
-        audio_file = generate_audio_file(chunk, lang)
-        audio_files.append(audio_file)
-    
-    print("Audio genérés :", audio_files)
-    
-    # Fusionner les fichiers audio
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as output_file:
-        output_filename = output_file.name
-        
-    # Utiliser ffmpeg pour concaténer les fichiers audio
-    concat_file = 'concat.txt'
-    with open(concat_file, 'w') as f:
-        for audio_file in audio_files:
-            f.write(f"file '{audio_file}'\n")
-    
-    os.system(f"ffmpeg -f concat -safe 0 -i {concat_file} -c copy {output_filename}")
-    
-    # Nettoyer les fichiers temporaires
-    os.remove(concat_file)
-    for audio_file in audio_files:
-        os.remove(audio_file)
+    output_filename = generate_audio_file(sentences, lang)
     
     print("Audio fusionné généré :", output_filename)
     
