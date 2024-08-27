@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, send_file
 import os
 import pathlib
 os.environ["SUNO_OFFLOAD_CPU"] = "True"
-os.environ["SUNO_USE_SMALL_MODELS"] = "True"
+os.environ["SUNO_USE_SMALL_MODELS"] = "False"
 
 import wikipedia
 import tempfile
@@ -16,6 +16,8 @@ import nltk
 from nltk.tokenize import sent_tokenize
 from dotenv import load_dotenv
 from openai import OpenAI
+
+load_dotenv()
 
 
 def get_safe_filename(title, lang):
@@ -99,7 +101,7 @@ def generate_audio_file(sentences, lang='en'):
         )
 
         # silence_audio = semantic_to_waveform(silence.copy(), history_prompt=SPEAKER)
-        pieces += [test_audio]
+        pieces += [test_audio, silence]
 
     # Concatenate all audio pieces
     final_audio = np.concatenate(pieces)
@@ -137,14 +139,14 @@ Instructions:
 Make the text more suitable for oral reading, and more entertaining to listen.
 Make the text more informative and engaging, like a podcast or a documentary.
 Preserve all the information and details. Preserve original text language
-Make the sentences shorter. If a sentences is too long, break it into multiple sentences. Sentences shouldn't be more than 30 words.
+Make the sentences maximum 30 words long. If a sentences is too long, break it into multiple sentences. 
 If a category of chapter seems empty, remove it.
 Do not include wikipedia specific categories, like see also, or other references.
 
 Original Article :"""
 
     response = client.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-4o-2024-08-06",
         messages=[
             {"role": "system", "content": "You are a helpful assistant that rewrites Wikipedia content for audio narration."},
             {"role": "user", "content": prompt}
