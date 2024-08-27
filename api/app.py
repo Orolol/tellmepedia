@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, send_file
 import os
 import wikipedia
-from urllib.parse import urlparse
+from urllib.parse import urlparse, unquote
 import tempfile
 import torch
 from bark import SAMPLE_RATE, generate_audio, preload_models
@@ -27,27 +27,46 @@ preload_models()
 
 print("Bark models preloaded")
 
-def generate_audio_file(text):
-    print("Generating audio file", text)
-    audio_array = generate_audio(text)
+def generate_audio_file(text, lang='en'):
+    print(f"Generating audio file for language: {lang}")
+    print("Text:", text)
+    
+    # Map language codes to Bark's speaker presets
+    lang_to_speaker = {
+        'en': 'v2/en_speaker_6',
+        'fr': 'v2/fr_speaker_5',
+        'de': 'v2/de_speaker_6',
+        'es': 'v2/es_speaker_6',
+        'it': 'v2/it_speaker_7',
+        'ja': 'v2/ja_speaker_5',
+        'zh': 'v2/zh_speaker_5',
+        # Add more languages and corresponding speaker presets as needed
+    }
+    
+    speaker = lang_to_speaker.get(lang, 'v2/en_speaker_6')  # Default to English if language not found
+    
+    audio_array = generate_audio(text, history_prompt=speaker)
     print("Audio file generated")
     with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as temp_file:
         write_wav(temp_file.name, SAMPLE_RATE, audio_array)
         return temp_file.name
 
-def extract_wiki_content(url):
-    # Extraire le titre de la page à partir de l'URL
+def extract_wiki_content(url, lang='en'):
+    # Extract the title from the URL and decode it
     path = urlparse(url).path
-    title = path.split('/')[-1]
+    title = unquote(path.split('/')[-1])
     
     try:
-        # Récupérer le contenu complet de la page Wikipédia
+        # Set the language for Wikipedia
+        wikipedia.set_lang(lang)
+        
+        # Get the full content of the Wikipedia page
         page = wikipedia.page(title)
         return page.content
     except wikipedia.exceptions.DisambiguationError as e:
-        return f"Erreur : Page ambiguë. Options possibles : {e.options}"
+        return f"Error: Ambiguous page. Possible options: {e.options}"
     except wikipedia.exceptions.PageError:
-        return "Erreur : Page non trouvée"
+        return "Error: Page not found"
 
 def split_content_into_chunks(content):
     nltk.download('punkt', quiet=True)
@@ -58,15 +77,17 @@ def split_content_into_chunks(content):
 def generate_audio_from_wiki():
     data = request.json
     wiki_url = data.get('wiki_url')
+    lang = data.get('lang', 'en')  # Default to English if not specified
     
-    print(wiki_url)
+    print(f"Wikipedia URL: {wiki_url}")
+    print(f"Language: {lang}")
     
     if not wiki_url:
-        return jsonify({"error": "URL Wikipedia manquante"}), 400
+        return jsonify({"error": "Missing Wikipedia URL"}), 400
     
-    content = extract_wiki_content(wiki_url)
+    content = extract_wiki_content(wiki_url, lang)
     
-    if content.startswith("Erreur :"):
+    if content.startswith("Error:"):
         return jsonify({"error": content}), 400
     
     chunks = split_content_into_chunks(content)
@@ -75,9 +96,9 @@ def generate_audio_from_wiki():
     
     audio_files = []
     for i, chunk in enumerate(chunks):
-        print(f"Traitement du chunk {i+1}/{len(chunks)}")
-        print(f"Longueur du chunk : {len(chunk)} caractères")
-        audio_file = generate_audio_file(chunk)
+        print(f"Processing chunk {i+1}/{len(chunks)}")
+        print(f"Chunk length: {len(chunk)} characters")
+        audio_file = generate_audio_file(chunk, lang)
         audio_files.append(audio_file)
     
     print("Audio genérés :", audio_files)
