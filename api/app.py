@@ -6,7 +6,7 @@ os.environ["SUNO_USE_SMALL_MODELS"] = "True"
 import wikipedia
 import tempfile
 import torch
-from bark import SAMPLE_RATE, generate_audio, preload_models, generate_text_semantic, semantic_to_waveform
+from bark import SAMPLE_RATE, generate_audio, preload_models, semantic_to_waveform
 from scipy.io.wavfile import write as write_wav
 import numpy as np
 import warnings
@@ -57,15 +57,14 @@ def generate_audio_file(sentences, lang='en'):
     pieces = []
     for sentence in sentences:
         print(f"Processing sentence: {sentence}")
-        semantic_tokens = generate_text_semantic(
+        test_audio = generate_audio(
             sentence,
             history_prompt=SPEAKER,
-            temp=GEN_TEMP,
-            min_eos_p=0.05,  # this controls how likely the generation is to end
+            text_temp=GEN_TEMP,
         )
 
-        audio_array = semantic_to_waveform(semantic_tokens, history_prompt=SPEAKER)
-        pieces += [audio_array, silence.copy()]
+        # silence_audio = semantic_to_waveform(silence.copy(), history_prompt=SPEAKER)
+        pieces += [test_audio]
 
     # Concatenate all audio pieces
     final_audio = np.concatenate(pieces)
