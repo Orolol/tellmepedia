@@ -15,6 +15,8 @@ app = Flask(__name__)
 # Suppress specific warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 
+nltk.download('punkt_tab')
+
 # Check for GPU availability
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using device: {device}")
@@ -26,7 +28,7 @@ preload_models()
 print("Bark models preloaded")
 
 def generate_audio_file(text):
-    print("Generating audio file")
+    print("Generating audio file", text)
     audio_array = generate_audio(text)
     print("Audio file generated")
     with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as temp_file:
@@ -47,23 +49,10 @@ def extract_wiki_content(url):
     except wikipedia.exceptions.PageError:
         return "Erreur : Page non trouvée"
 
-def split_content_into_chunks(content, max_chunk_size=2000):
+def split_content_into_chunks(content):
     nltk.download('punkt', quiet=True)
     sentences = sent_tokenize(content)
-    chunks = []
-    current_chunk = ""
-    
-    for sentence in sentences:
-        if len(current_chunk) + len(sentence) <= max_chunk_size:
-            current_chunk += sentence + " "
-        else:
-            chunks.append(current_chunk.strip())
-            current_chunk = sentence + " "
-    
-    if current_chunk:
-        chunks.append(current_chunk.strip())
-    
-    return chunks
+    return sentences
 
 @app.route('/generate_audio', methods=['POST'])
 def generate_audio_from_wiki():
