@@ -13,12 +13,12 @@ import warnings
 import nltk
 from nltk.tokenize import sent_tokenize
 from dotenv import load_dotenv
-import openai
+from openai import OpenAI
 
 load_dotenv()
 
-# Set up OpenAI API key
-openai.api_key = os.getenv("OPENAI_API_KEY")
+# Initialize the OpenAI client
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
 
@@ -84,7 +84,8 @@ def extract_wiki_content(title, lang='en'):
         wikipedia.set_lang(lang)
         
         # Get the full content of the Wikipedia page
-        page = wikipedia.page(title)
+        page = wikipedia.page(title, auto_suggest=False)
+        
         return page.content
     except wikipedia.exceptions.DisambiguationError as e:
         return f"Error: Ambiguous page. Possible options: {e.options}"
@@ -102,24 +103,24 @@ def rewrite_content_with_gpt4(content):
 {content}
 
 Instructions:
-1) Make the text more suitable for oral reading
-2) Preserve all the information
-3) Make the sentences shorter. Bark can only generate audio up to 13 seconds, so ensure sentences fit within this maximum duration.
+Make the text more suitable for oral reading, and more entertaining to listen.
+Make the text more informative and engaging, like a podcast or a documentary
+Preserve all the information and preserve original text language
+Make the sentences shorter. Bark can only generate audio up to 13 seconds, so ensure sentences fit within this maximum duration.
 
 Rewritten content:"""
 
-    response = openai.ChatCompletion.create(
+    response = client.chat.completions.create(
         model="gpt-4o",
         messages=[
             {"role": "system", "content": "You are a helpful assistant that rewrites Wikipedia content for audio narration."},
             {"role": "user", "content": prompt}
         ],
         n=1,
-        stop=None,
         temperature=0.4,
     )
 
-    return response.choices[0].message['content'].strip()
+    return response.choices[0].message.content.strip()
 
 @app.route('/generate_audio', methods=['POST'])
 def generate_audio_from_wiki():
