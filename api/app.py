@@ -19,6 +19,36 @@ from openai import OpenAI
 
 load_dotenv()
 
+def get_safe_filename(title, lang):
+    safe_title = "".join([c for c in title if c.isalnum() or c in (' ', '-', '_')]).rstrip()
+    return f"{safe_title}_{lang}"
+
+def save_text(content, filename):
+    filepath = pathlib.Path("saved_texts") / f"{filename}.txt"
+    filepath.parent.mkdir(parents=True, exist_ok=True)
+    with open(filepath, "w", encoding="utf-8") as f:
+        f.write(content)
+
+def save_audio(audio_file, filename):
+    filepath = pathlib.Path("saved_audio") / f"{filename}.wav"
+    filepath.parent.mkdir(parents=True, exist_ok=True)
+    with open(filepath, "wb") as f:
+        with open(audio_file, "rb") as source_file:
+            f.write(source_file.read())
+
+def load_audio(filename):
+    filepath = pathlib.Path("saved_audio") / f"{filename}.wav"
+    if filepath.exists():
+        return str(filepath)
+    return None
+
+def load_text(filename):
+    filepath = pathlib.Path("saved_texts") / f"{filename}.txt"
+    if filepath.exists():
+        with open(filepath, "r", encoding="utf-8") as f:
+            return f.read()
+    return None
+
 # Initialize the OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
@@ -130,21 +160,37 @@ def generate_audio_from_wiki():
     title = data.get('title')
     lang = data.get('lang', 'en')  # Default to English if not specified
     size = data.get('size', 0)  # Default to 0 (full article) if not specified
+    force_regenerate = data.get('force_regenerate', False)
     
     print(f"Wikipedia Title: {title}")
     print(f"Language: {lang}")
     print(f"Size: {size}")
+    print(f"Force Regenerate: {force_regenerate}")
     
     if not title:
         return jsonify({"error": "Missing Wikipedia page title"}), 400
     
-    content = extract_wiki_content(title, lang)
+    safe_filename = get_safe_filename(title, lang)
     
-    if content.startswith("Error:"):
-        return jsonify({"error": content}), 400
+    if not force_regenerate:
+        existing_audio = load_audio(safe_filename)
+        if existing_audio:
+            print("Using existing audio file")
+            return send_file(existing_audio, mimetype='audio/wav', as_attachment=True, download_name='wiki_audio.wav')
+    
+    existing_text = load_text(safe_filename)
+    if existing_text and not force_regenerate:
+        print("Using existing text content")
+        content = existing_text
+    else:
+        content = extract_wiki_content(title, lang)
+        if content.startswith("Error:"):
+            return jsonify({"error": content}), 400
+        save_text(content, safe_filename)
     
     # Rewrite content using GPT-4
     rewritten_content = rewrite_content_with_gpt4(content)
+    save_text(rewritten_content, f"{safe_filename}_rewritten")
     
     sentences = split_content_into_chunks(rewritten_content)
     
@@ -156,6 +202,9 @@ def generate_audio_from_wiki():
     output_filename = generate_audio_file(sentences, lang)
     
     print("Audio fusionné généré :", output_filename)
+    
+    # Save the generated audio file
+    save_audio(output_filename, safe_filename)
     
     # Envoyer le fichier audio fusionné
     response = send_file(output_filename, mimetype='audio/wav', as_attachment=True, download_name='wiki_audio.wav')
