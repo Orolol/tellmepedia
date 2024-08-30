@@ -74,7 +74,7 @@ SAMPLE_RATE = 22050  # StyleTTS2 default sample rate
 
 def generate_audio_file(text, lang='en'):
     print(f"Generating audio file for language: {lang}")
-    mytts.inference(text, output_sample_rate=SAMPLE_RATE, diffusion_steps=10,  embedding_scale=1.5, output_wav_file="audio.wav")
+    mytts.inference(text, output_sample_rate=SAMPLE_RATE, diffusion_steps=5,  embedding_scale=1, output_wav_file="audio.wav")
     return "audio.wav"
 
 def extract_wiki_content(title, lang='en'):
@@ -102,7 +102,6 @@ def rewrite_content_with_gpt4(content):
     - Make it informative and engaging, like a podcast or documentary.
     - Preserve all information, details.
     - Preserve the original language of the article.
-    - Keep sentences to a maximum of 30 words, breaking longer ones into multiple sentences.
     - Remove empty categories or chapters.
     - Exclude Wikipedia-specific categories like "See also" or other references.
     """
