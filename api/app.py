@@ -15,6 +15,7 @@ from scipy.io.wavfile import write
 import torch
 from styletts2 import tts
 from dotenv import load_dotenv
+from openai import OpenAI
 import openai
 
 load_dotenv()
