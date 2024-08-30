@@ -7,7 +7,6 @@ from flask import Flask, request, jsonify, send_file
 import os
 import pathlib
 import wikipedia
-import tempfile
 import torch
 import numpy as np
 import warnings
@@ -15,7 +14,6 @@ import nltk
 from nltk.tokenize import sent_tokenize
 from dotenv import load_dotenv
 from openai import OpenAI
-import concurrent
 from scipy.io.wavfile import write as write_wav
 from styletts2 import tts
 
@@ -174,7 +172,7 @@ def generate_audio_from_wiki():
     
     save_audio(output_filename, safe_filename)
 
-    response = send_file(output_filename, mimetype='audio/wav', as_attachment=True, download_name='wiki_audio.wav')
+    response = send_file("../" + output_filename, mimetype='audio/wav', as_attachment=True, download_name='wiki_audio.wav')
     response.headers['X-Temp-File'] = output_filename
     
     return response
