@@ -8,3 +8,4 @@ scipy
 Werkzeug==2.2.2
 nltk==3.8.1
 openai==1.3.5
+python-dotenv
