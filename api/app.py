@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, send_file
 import os
 import pathlib
-os.environ["SUNO_OFFLOAD_CPU"] = "True"
+os.environ["SUNO_OFFLOAD_CPU"] = "False"
 os.environ["SUNO_USE_SMALL_MODELS"] = "False"
 
 import wikipedia
@@ -50,24 +50,20 @@ def load_text(filename):
             return f.read()
     return None
 
-# Initialize the OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
 
 app = Flask(__name__)
 
-# Suppress specific warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 nltk.download('punkt_tab')
 
-# Check for GPU availability
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using device: {device}")
 
 print("Preloading Bark models")
-# Preload Bark models
 preload_models()
 
 print("Bark models preloaded")
@@ -75,7 +71,6 @@ print("Bark models preloaded")
 def generate_audio_file(sentences, lang='en'):
     print(f"Generating audio file for language: {lang}")
     
-    # Map language codes to Bark's speaker presets
     lang_to_speaker = {
         'en': 'v2/en_speaker_6',
         'fr': 'v2/fr_speaker_1',
@@ -84,12 +79,12 @@ def generate_audio_file(sentences, lang='en'):
         'it': 'v2/it_speaker_7',
         'ja': 'v2/ja_speaker_5',
         'zh': 'v2/zh_speaker_5',
-        # Add more languages and corresponding speaker presets as needed
+
     }
     
-    SPEAKER = lang_to_speaker.get(lang, 'v2/en_speaker_6')  # Default to English if language not found
+    SPEAKER = lang_to_speaker.get(lang, 'v2/en_speaker_6')
     GEN_TEMP = 0.6
-    silence = np.zeros(int(0.25 * SAMPLE_RATE))  # quarter second of silence
+    silence = np.zeros(int(0.25 * SAMPLE_RATE))
 
     pieces = []
     for sentence in sentences:
@@ -100,10 +95,8 @@ def generate_audio_file(sentences, lang='en'):
             text_temp=GEN_TEMP,
         )
 
-        # silence_audio = semantic_to_waveform(silence.copy(), history_prompt=SPEAKER)
-        pieces += [test_audio, silence]
+        pieces += [test_audio]
 
-    # Concatenate all audio pieces
     final_audio = np.concatenate(pieces)
     
     print("Audio file generated")
@@ -113,10 +106,8 @@ def generate_audio_file(sentences, lang='en'):
 
 def extract_wiki_content(title, lang='en'):
     try:
-        # Set the language for Wikipedia
         wikipedia.set_lang(lang)
         
-        # Get the full content of the Wikipedia page
         page = wikipedia.page(title, auto_suggest=False)
         
         return page.content
@@ -131,38 +122,47 @@ def split_content_into_chunks(content):
     return sentences
 
 def rewrite_content_with_gpt4(content):
-    prompt = f"""Rewrite the following Wikipedia content:
-
-{content}
-
-Instructions:
-Make the text more suitable for oral reading, and more entertaining to listen.
-Make the text more informative and engaging, like a podcast or a documentary.
-Preserve all the information and details. Preserve original text language
-Make the sentences maximum 30 words long. If a sentences is too long, break it into multiple sentences. 
-If a category of chapter seems empty, remove it.
-Do not include wikipedia specific categories, like see also, or other references.
-
-Original Article :"""
-
-    response = client.chat.completions.create(
-        model="gpt-4o-2024-08-06",
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant that rewrites Wikipedia content for audio narration."},
-            {"role": "user", "content": prompt}
-        ],
-        n=1,
-        temperature=0.7,
-    )
-
-    return response.choices[0].message.content.strip()
+    system_message = "You are a helpful assistant that rewrites Wikipedia content for audio narration."
+    user_instructions = """
+    Rewrite the following Wikipedia content:
+    - Make it suitable for oral reading and more entertaining to listen to.
+    - Make it informative and engaging, like a podcast or documentary.
+    - Preserve all information, details.
+    - Preserve the original language of the article.
+    - Keep sentences to a maximum of 30 words, breaking longer ones into multiple sentences.
+    - Remove empty categories or chapters.
+    - Exclude Wikipedia-specific categories like "See also" or other references.
+    """
+    
+    initial_prompt = f"{user_instructions}\n\nOriginal Article:\n{content}"
+    
+    rewritten_content = ""
+    
+    while True:
+        response = client.chat.completions.create(
+            model="gpt-4o-2024-08-06",
+            messages=[
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": initial_prompt if not rewritten_content else "Please continue"},
+                *([] if not rewritten_content else [{"role": "assistant", "content": rewritten_content}])
+            ],
+            n=1,
+            temperature=0.7,
+        )
+        
+        rewritten_content += response.choices[0].message.content.strip()
+        
+        if response.choices[0].finish_reason != "length":
+            break
+    
+    return rewritten_content
 
 @app.route('/generate_audio', methods=['POST'])
 def generate_audio_from_wiki():
     data = request.json
     title = data.get('title')
-    lang = data.get('lang', 'en')  # Default to English if not specified
-    size = data.get('size', 0)  # Default to 0 (full article) if not specified
+    lang = data.get('lang', 'en')
+    size = data.get('size', 0)
     force_regenerate = data.get('force_regenerate', False)
     
     print(f"Wikipedia Title: {title}")
@@ -191,7 +191,6 @@ def generate_audio_from_wiki():
             return jsonify({"error": content}), 400
         save_text(content, safe_filename)
     
-    # Rewrite content using GPT-4
     rewritten_content = rewrite_content_with_gpt4(content)
     save_text(rewritten_content, f"{safe_filename}_rewritten")
     
@@ -215,7 +214,6 @@ def generate_audio_from_wiki():
 
 @app.after_request
 def cleanup(response):
-    # Supprimer le fichier temporaire après l'envoi
     temp_file = response.headers.get('X-Temp-File')
     if temp_file and os.path.exists(temp_file):
         os.remove(temp_file)
