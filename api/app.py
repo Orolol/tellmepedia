@@ -1,3 +1,8 @@
+import multiprocessing
+
+# Set the start method to 'spawn'
+multiprocessing.set_start_method('spawn', force=True)
+
 from flask import Flask, request, jsonify, send_file
 import os
 import pathlib
@@ -84,7 +89,6 @@ def generate_audio_file(sentences, lang='en'):
         'it': 'v2/it_speaker_7',
         'ja': 'v2/ja_speaker_5',
         'zh': 'v2/zh_speaker_5',
-
     }
     
     SPEAKER = lang_to_speaker.get(lang, 'v2/en_speaker_6')
@@ -92,7 +96,7 @@ def generate_audio_file(sentences, lang='en'):
     silence = np.zeros(int(0.25 * SAMPLE_RATE))
 
     pieces = []
-    with concurrent.futures.ProcessPoolExecutor() as executor:
+    with concurrent.futures.ThreadPoolExecutor() as executor:
         futures = {executor.submit(generate_audio, sentence, history_prompt=SPEAKER, text_temp=GEN_TEMP): sentence for sentence in sentences}
         for future in concurrent.futures.as_completed(futures):
             sentence = futures[future]
