@@ -3,30 +3,27 @@ import multiprocessing
 # Set the start method to 'spawn'
 multiprocessing.set_start_method('spawn', force=True)
 
-from flask import Flask, request, Response, jsonify, send_file
+from flask import Flask, request, jsonify, send_file
 import os
 import pathlib
+os.environ["SUNO_OFFLOAD_CPU"] = "False"
+os.environ["SUNO_USE_SMALL_MODELS"] = "False"
+
+import wikipedia
 import tempfile
-import io
-import base64
-import json
-import numpy as np
-from scipy.io.wavfile import write
+import hashlib
 import torch
-from styletts2 import tts
+from bark import SAMPLE_RATE, generate_audio, preload_models, semantic_to_waveform
+from scipy.io.wavfile import write as write_wav
+import numpy as np
+import warnings
+import nltk
+from nltk.tokenize import sent_tokenize
 from dotenv import load_dotenv
 from openai import OpenAI
-import openai
+import concurrent
 
 load_dotenv()
-
-SAMPLE_RATE = 24000
-tts_model = tts.StyleTTS2()
-
-app = Flask(__name__)
-
-CHAR_BUFFER_LEN = 100
-end_of_sentence_punctuation = ['.', '!', '?']
 
 
 def get_safe_filename(title, lang):
@@ -63,113 +60,174 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
 
-def textToSpeech(text):
-    voicewave = tts_model.inference(text, diffusion_steps=3, output_sample_rate=SAMPLE_RATE)
-    return voicewave
+app = Flask(__name__)
 
-def ndarrayToBase64(arr):
-    bytes_wav = bytes()
-    byte_io = io.BytesIO(bytes_wav)
-    write(byte_io, SAMPLE_RATE, arr)
-    wav_bytes = byte_io.read()
-    audio_data = base64.b64encode(wav_bytes).decode('UTF-8')
-    return audio_data
+warnings.filterwarnings("ignore", category=FutureWarning)
 
-def generateAudioSseEvent(text):
-    if not text:
-        return 'data: %s\n\n' % json.dumps({"text": ""})
-    audio = ndarrayToBase64(textToSpeech(text))
-    return 'data: %s\n\n' % json.dumps({"audio": audio})
+nltk.download('punkt_tab')
 
-@app.route('/')
-def hello():
-    html = """
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-    <meta charset="UTF-8">
-    <title>Realtime Text->Audio Generator</title>
-    </head>
-    <body>
-    <input type="text" id="inputField" placeholder="Enter question here">
-    <button onclick="sendMessage()">Send</button>
-    <div id="result">      
-    <script>
-        var audioQueue = []
-        var playing = false;
-        const audioElement = new Audio();
-        var currentIndex = 0;
-        function playNextAudio() {
-            if (currentIndex < audioQueue.length) {
-              audioElement.src = audioQueue[currentIndex];
-              audioElement.play();
-              currentIndex++;
+device = "cuda" if torch.cuda.is_available() else "cpu"
+if device == "cuda":
+    # Display device 
+    print(f"Using GPU: {torch.cuda.get_device_name(0)}")
+    torch.cuda.set_device(0)
+print(f"Using device: {device}")
 
-              audioElement.onended = function() {
-                  playNextAudio();
-              };
+print("Preloading Bark models")
+preload_models()
 
-            } else {
-              playing = false;
-            }
-        }
+print("Bark models preloaded")
 
-        function sendMessage() {
-          var inputValue = document.getElementById('inputField').value;
-          const queryString = '?question=' + encodeURIComponent(inputValue)
-          var eventSource = new EventSource('/question' + queryString)
-          eventSource.onmessage = function(event) {
-            var message = JSON.parse(event.data);
-            if (message.done) {
-              console.log('Closing session')
-              eventSource.close()
-            }
-            if (message.text) {
-              document.getElementById("result").innerHTML += message.text;
-            }
-            if (message.audio) {
-              audioQueue.push("data:audio/wav;base64," + message.audio)
-              if (!playing) {
-                playing = true;
-                playNextAudio()
-              }
-            }
-            console.log('Message: ' + message.text);
-          };
-        }
-    </script>
-    </body>
-    </html>
+def generate_audio_file(sentences, lang='en'):
+    print(f"Generating audio file for language: {lang}")
+    
+    lang_to_speaker = {
+        'en': 'v2/en_speaker_6',
+        'fr': 'v2/fr_speaker_1',
+        'de': 'v2/de_speaker_6',
+        'es': 'v2/es_speaker_6',
+        'it': 'v2/it_speaker_7',
+        'ja': 'v2/ja_speaker_5',
+        'zh': 'v2/zh_speaker_5',
+    }
+    
+    SPEAKER = lang_to_speaker.get(lang, 'v2/en_speaker_6')
+    GEN_TEMP = 0.6
+    silence = np.zeros(int(0.25 * SAMPLE_RATE))
+
+    pieces = []
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = {executor.submit(generate_audio, sentence, history_prompt=SPEAKER, text_temp=GEN_TEMP): sentence for sentence in sentences}
+        for future in concurrent.futures.as_completed(futures):
+            sentence = futures[future]
+            try:
+                piece = future.result()
+            except Exception as exc:
+                print(f"Error processing sentence: {sentence}: {exc}")
+            else:
+                pieces.append(piece)
+
+    final_audio = np.concatenate(pieces)
+    
+    print("Audio file generated")
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as temp_file:
+        write_wav(temp_file.name, SAMPLE_RATE, final_audio)
+        return temp_file.name
+
+def extract_wiki_content(title, lang='en'):
+    try:
+        wikipedia.set_lang(lang)
+        
+        page = wikipedia.page(title, auto_suggest=False)
+        
+        return page.content
+    except wikipedia.exceptions.DisambiguationError as e:
+        return f"Error: Ambiguous page. Possible options: {e.options}"
+    except wikipedia.exceptions.PageError:
+        return "Error: Page not found"
+
+def split_content_into_chunks(content):
+    nltk.download('punkt', quiet=True)
+    sentences = sent_tokenize(content)
+    return sentences
+
+def rewrite_content_with_gpt4(content):
+    system_message = "You are a helpful assistant that rewrites Wikipedia content for audio narration."
+    user_instructions = """
+    Rewrite the following Wikipedia content:
+    - Make it suitable for oral reading and more entertaining to listen to.
+    - Make it informative and engaging, like a podcast or documentary.
+    - Preserve all information, details.
+    - Preserve the original language of the article.
+    - Keep sentences to a maximum of 30 words, breaking longer ones into multiple sentences.
+    - Remove empty categories or chapters.
+    - Exclude Wikipedia-specific categories like "See also" or other references.
     """
-    return html
-
-@app.route('/question')
-def askQuestion():
-    args = request.args
-    question = args.get('question', 'How far is the moon from mars?')
-
-    def stream():
-        res = openai.ChatCompletion.create(
-          model="gpt-3.5-turbo",
-          messages=[{"role": "user", "content": question}],
-          stream=True,
+    
+    initial_prompt = f"{user_instructions}\n\nOriginal Article:\n{content}"
+    
+    rewritten_content = ""
+    
+    while True:
+        response = client.chat.completions.create(
+            model="gpt-4o-2024-08-06",
+            messages=[
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": initial_prompt if not rewritten_content else "Please continue"},
+                *([] if not rewritten_content else [{"role": "assistant", "content": rewritten_content}])
+            ],
+            n=1,
+            temperature=0.7,
         )
-        buff = ''
-        for chunk in res:
-            if chunk.choices[0].delta.content:
-                content = chunk.choices[0].delta.content
-                yield 'data: %s\n\n' % json.dumps({"text": content})
-                buff += content
-                # Try to keep sentences together, making the voice flow smooth
-                last_delimiter_index = max(buff.rfind(p) for p in end_of_sentence_punctuation)
-                if last_delimiter_index == -1 and len(buff) < CHAR_BUFFER_LEN:
-                    continue
-                current = buff[:last_delimiter_index + 1]
-                buff = buff[last_delimiter_index + 1:]
-                yield generateAudioSseEvent(current)
-        yield generateAudioSseEvent(buff)
-        yield 'data: %s\n\n' % json.dumps({"text": "", "audio": "", "done": True})
-    return Response(stream(), mimetype='text/event-stream')
+        
+        rewritten_content += response.choices[0].message.content.strip()
+        
+        if response.choices[0].finish_reason != "length":
+            break
+    
+    return rewritten_content
+
+@app.route('/generate_audio', methods=['POST'])
+def generate_audio_from_wiki():
+    data = request.json
+    title = data.get('title')
+    lang = data.get('lang', 'en')
+    size = data.get('size', 0)
+    force_regenerate = data.get('force_regenerate', False)
+    
+    print(f"Wikipedia Title: {title}")
+    print(f"Language: {lang}")
+    print(f"Size: {size}")
+    print(f"Force Regenerate: {force_regenerate}")
+    
+    if not title:
+        return jsonify({"error": "Missing Wikipedia page title"}), 400
+    
+    safe_filename = get_safe_filename(title, lang)
+    
+    if not force_regenerate:
+        existing_audio = load_audio(safe_filename)
+        if existing_audio:
+            print("Using existing audio file")
+            return send_file(existing_audio, mimetype='audio/wav', as_attachment=True, download_name='wiki_audio.wav')
+    
+    existing_text = load_text(safe_filename)
+    if existing_text and not force_regenerate:
+        print("Using existing text content")
+        content = existing_text
+    else:
+        content = extract_wiki_content(title, lang)
+        if content.startswith("Error:"):
+            return jsonify({"error": content}), 400
+        save_text(content, safe_filename)
+    
+    rewritten_content = rewrite_content_with_gpt4(content)
+    save_text(rewritten_content, f"{safe_filename}_rewritten")
+    
+    sentences = split_content_into_chunks(rewritten_content)
+    
+    if size > 0:
+        sentences = sentences[:size]
+    
+    print(f"Nombre de phrases : {len(sentences)}")
+    
+    output_filename = generate_audio_file(sentences, lang)
+    
+    print("Audio fusionné généré :", output_filename)
+    
+    save_audio(output_filename, safe_filename)
+
+    response = send_file(output_filename, mimetype='audio/wav', as_attachment=True, download_name='wiki_audio.wav')
+    response.headers['X-Temp-File'] = output_filename
+    
+    return response
+
+@app.after_request
+def cleanup(response):
+    temp_file = response.headers.get('X-Temp-File')
+    if temp_file and os.path.exists(temp_file):
+        os.remove(temp_file)
+    return response
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=False)
