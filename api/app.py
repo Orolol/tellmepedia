@@ -16,6 +16,7 @@ import nltk
 from nltk.tokenize import sent_tokenize
 from dotenv import load_dotenv
 from openai import OpenAI
+import concurrent
 
 load_dotenv()
 
@@ -91,15 +92,16 @@ def generate_audio_file(sentences, lang='en'):
     silence = np.zeros(int(0.25 * SAMPLE_RATE))
 
     pieces = []
-    for sentence in sentences:
-        print(f"Processing sentence: {sentence}")
-        test_audio = generate_audio(
-            sentence,
-            history_prompt=SPEAKER,
-            text_temp=GEN_TEMP,
-        )
-
-        pieces += [test_audio]
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        futures = {executor.submit(generate_audio, sentence, history_prompt=SPEAKER, text_temp=GEN_TEMP): sentence for sentence in sentences}
+        for future in concurrent.futures.as_completed(futures):
+            sentence = futures[future]
+            try:
+                piece = future.result()
+            except Exception as exc:
+                print(f"Error processing sentence: {sentence}: {exc}")
+            else:
+                pieces.append(piece)
 
     final_audio = np.concatenate(pieces)
     
