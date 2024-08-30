@@ -61,6 +61,10 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 nltk.download('punkt_tab')
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
+if device == "cuda":
+    # Display device 
+    print(f"Using GPU: {torch.cuda.get_device_name(0)}")
+    torch.cuda.set_device(0)
 print(f"Using device: {device}")
 
 print("Preloading Bark models")
