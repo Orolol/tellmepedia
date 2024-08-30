@@ -22,7 +22,7 @@ from styletts2 import tts
 load_dotenv()
 
 # Initialize StyleTTS2
-styletts2 = tts.StyleTTS2()
+mytts = tts.StyleTTS2()
 
 
 def get_safe_filename(title, lang):
@@ -74,26 +74,10 @@ print(f"Using device: {device}")
 
 SAMPLE_RATE = 22050  # StyleTTS2 default sample rate
 
-def generate_audio_file(sentences, lang='en'):
+def generate_audio_file(text, lang='en'):
     print(f"Generating audio file for language: {lang}")
-    
-    silence = np.zeros(int(0.25 * SAMPLE_RATE))
-
-    pieces = []
-    for sentence in sentences:
-        try:
-            audio = styletts2.inference(sentence)
-            pieces.append(audio)
-            pieces.append(silence)
-        except Exception as exc:
-            print(f"Error processing sentence: {sentence}: {exc}")
-
-    final_audio = np.concatenate(pieces)
-    
-    print("Audio file generated")
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as temp_file:
-        write_wav(temp_file.name, SAMPLE_RATE, final_audio.astype(np.int16))
-        return temp_file.name
+    mytts.inference(text, output_sample_rate=SAMPLE_RATE, diffusion_steps=10,  embedding_scale=1.5, output_wav_file="audio.wav")
+    return "audio.wav"
 
 def extract_wiki_content(title, lang='en'):
     try:
@@ -185,15 +169,7 @@ def generate_audio_from_wiki():
     rewritten_content = rewrite_content_with_gpt4(content)
     save_text(rewritten_content, f"{safe_filename}_rewritten")
     
-    sentences = split_content_into_chunks(rewritten_content)
-    
-    if size > 0:
-        sentences = sentences[:size]
-    
-    print(f"Nombre de phrases : {len(sentences)}")
-    
-    output_filename = generate_audio_file(sentences, lang)
-    
+    output_filename = generate_audio_file(rewritten_content, lang)
     print("Audio fusionné généré :", output_filename)
     
     save_audio(output_filename, safe_filename)

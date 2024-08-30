@@ -2,3 +2,5 @@
 *.pyc
 .aider*
 /saved*
+*.wav
+/StyleTTS/
