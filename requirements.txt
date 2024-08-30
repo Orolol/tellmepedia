@@ -9,3 +9,4 @@ nltk==3.8.1
 openai==0.28
 python-dotenv
 styletts2
+numpy

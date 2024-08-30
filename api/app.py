@@ -6,15 +6,9 @@ multiprocessing.set_start_method('spawn', force=True)
 from flask import Flask, request, jsonify, send_file
 import os
 import pathlib
-os.environ["SUNO_OFFLOAD_CPU"] = "False"
-os.environ["SUNO_USE_SMALL_MODELS"] = "False"
-
 import wikipedia
 import tempfile
-import hashlib
 import torch
-from bark import SAMPLE_RATE, generate_audio, preload_models, semantic_to_waveform
-from scipy.io.wavfile import write as write_wav
 import numpy as np
 import warnings
 import nltk
@@ -22,8 +16,13 @@ from nltk.tokenize import sent_tokenize
 from dotenv import load_dotenv
 from openai import OpenAI
 import concurrent
+from scipy.io.wavfile import write as write_wav
+from styletts2 import StyleTTS2
 
 load_dotenv()
+
+# Initialize StyleTTS2
+styletts2 = StyleTTS2()
 
 
 def get_safe_filename(title, lang):
@@ -73,39 +72,32 @@ if device == "cuda":
     torch.cuda.set_device(0)
 print(f"Using device: {device}")
 
-print("Preloading Bark models")
-preload_models()
-
-print("Bark models preloaded")
+SAMPLE_RATE = 22050  # StyleTTS2 default sample rate
 
 def generate_audio_file(sentences, lang='en'):
     print(f"Generating audio file for language: {lang}")
     
     lang_to_speaker = {
-        'en': 'v2/en_speaker_6',
-        'fr': 'v2/fr_speaker_1',
-        'de': 'v2/de_speaker_6',
-        'es': 'v2/es_speaker_6',
-        'it': 'v2/it_speaker_7',
-        'ja': 'v2/ja_speaker_5',
-        'zh': 'v2/zh_speaker_5',
+        'en': 0,  # Assuming speaker IDs for StyleTTS2
+        'fr': 1,
+        'de': 2,
+        'es': 3,
+        'it': 4,
+        'ja': 5,
+        'zh': 6,
     }
     
-    SPEAKER = lang_to_speaker.get(lang, 'v2/en_speaker_6')
-    GEN_TEMP = 0.6
+    speaker = lang_to_speaker.get(lang, 0)
     silence = np.zeros(int(0.25 * SAMPLE_RATE))
 
     pieces = []
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        futures = {executor.submit(generate_audio, sentence, history_prompt=SPEAKER, text_temp=GEN_TEMP): sentence for sentence in sentences}
-        for future in concurrent.futures.as_completed(futures):
-            sentence = futures[future]
-            try:
-                piece = future.result()
-            except Exception as exc:
-                print(f"Error processing sentence: {sentence}: {exc}")
-            else:
-                pieces.append(piece)
+    for sentence in sentences:
+        try:
+            audio = styletts2.inference(sentence, speaker)
+            pieces.append(audio)
+            pieces.append(silence)
+        except Exception as exc:
+            print(f"Error processing sentence: {sentence}: {exc}")
 
     final_audio = np.concatenate(pieces)
     
