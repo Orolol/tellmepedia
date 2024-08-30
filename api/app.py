@@ -20,7 +20,7 @@ from styletts2 import tts
 load_dotenv()
 
 # Initialize StyleTTS2
-mytts = tts.StyleTTS2()
+mytts = tts.StyleTTS2(config_path="StyleTTS2/config.yml")
 
 
 def get_safe_filename(title, lang):
