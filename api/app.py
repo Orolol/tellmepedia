@@ -17,12 +17,12 @@ from dotenv import load_dotenv
 from openai import OpenAI
 import concurrent
 from scipy.io.wavfile import write as write_wav
-from styletts2 import StyleTTS2
+from styletts2 import tts
 
 load_dotenv()
 
 # Initialize StyleTTS2
-styletts2 = StyleTTS2()
+styletts2 = tts.StyleTTS2()
 
 
 def get_safe_filename(title, lang):
@@ -77,23 +77,12 @@ SAMPLE_RATE = 22050  # StyleTTS2 default sample rate
 def generate_audio_file(sentences, lang='en'):
     print(f"Generating audio file for language: {lang}")
     
-    lang_to_speaker = {
-        'en': 0,  # Assuming speaker IDs for StyleTTS2
-        'fr': 1,
-        'de': 2,
-        'es': 3,
-        'it': 4,
-        'ja': 5,
-        'zh': 6,
-    }
-    
-    speaker = lang_to_speaker.get(lang, 0)
     silence = np.zeros(int(0.25 * SAMPLE_RATE))
 
     pieces = []
     for sentence in sentences:
         try:
-            audio = styletts2.inference(sentence, speaker)
+            audio = styletts2.inference(sentence)
             pieces.append(audio)
             pieces.append(silence)
         except Exception as exc:
@@ -103,7 +92,7 @@ def generate_audio_file(sentences, lang='en'):
     
     print("Audio file generated")
     with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as temp_file:
-        write_wav(temp_file.name, SAMPLE_RATE, final_audio)
+        write_wav(temp_file.name, SAMPLE_RATE, final_audio.astype(np.int16))
         return temp_file.name
 
 def extract_wiki_content(title, lang='en'):
