@@ -91,8 +91,6 @@ function AudioList({ generatedFile, setCurrentlyPlaying }) {
     }
   };
 
-  const [audio, setAudio] = useState(null);
-
   const handlePlay = async (file) => {
     if (audio && audio.src && audio.src.includes(encodeURIComponent(file.title))) {
       if (audio.paused) {
