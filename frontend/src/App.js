@@ -10,10 +10,21 @@ function App() {
   return (
     <div className="App">
       <h1>TellMePedia</h1>
-      <AudioGenerator setGeneratedFile={setGeneratedFile} />
-      {generatedFile && <p>Generated file: {generatedFile}</p>}
-      <AudioList />
-      <AudioDownloader />
+      <div className="container">
+        <div className="section">
+          <h2>Generate Audio</h2>
+          <AudioGenerator setGeneratedFile={setGeneratedFile} />
+          {generatedFile && <p>Generated file: {generatedFile}</p>}
+        </div>
+        <div className="section">
+          <h2>Audio List</h2>
+          <AudioList />
+        </div>
+        <div className="section">
+          <h2>Download Audio</h2>
+          <AudioDownloader />
+        </div>
+      </div>
     </div>
   );
 }
