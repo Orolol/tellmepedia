@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 
 function AudioList({ generatedFile, setCurrentlyPlaying }) {
+  const [ratingInput, setRatingInput] = useState('');
   const [audioFiles, setAudioFiles] = useState([]);
   const [filteredAudioFiles, setFilteredAudioFiles] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -128,6 +129,19 @@ function AudioList({ generatedFile, setCurrentlyPlaying }) {
     }
   };
 
+  const handleRatingChange = async (file, rating) => {
+    try {
+      const response = await axios.post(`http://localhost:5000/rate_audio?title=${encodeURIComponent(file.title)}&lang=${file.lang}`, {
+        rating: rating,
+      });
+      const updatedFile = { ...file, rating: response.data.rating };
+      setAudioFiles(audioFiles.map((f) => (f.title === file.title ? updatedFile : f)));
+      setFilteredAudioFiles(filteredAudioFiles.map((f) => (f.title === file.title ? updatedFile : f)));
+    } catch (error) {
+      console.error('Error rating audio file:', error);
+    }
+  };
+
   return (
     <div className="audio-list">
       <div className="search-bar">
@@ -162,6 +176,17 @@ function AudioList({ generatedFile, setCurrentlyPlaying }) {
               >
                 Download
               </button>
+            </div>
+            <div className="rating-section">
+              <input
+                type="number"
+                min="1"
+                max="5"
+                value={ratingInput}
+                onChange={(e) => setRatingInput(e.target.value)}
+              />
+              <button onClick={() => handleRatingChange(file, ratingInput)}>Rate</button>
+              <p>Current rating: {file.rating}</p>
             </div>
           </li>
         ))}
