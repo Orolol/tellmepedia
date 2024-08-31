@@ -51,3 +51,18 @@ function AudioPlayer({ currentlyPlaying }) {
 }
 
 export default AudioPlayer;
+import React from 'react';
+
+function AudioPlayer({ currentlyPlaying }) {
+  return (
+    <div className="audio-player">
+      {currentlyPlaying ? (
+        <p>Now playing: {currentlyPlaying}</p>
+      ) : (
+        <p>Play an audio to start</p>
+      )}
+    </div>
+  );
+}
+
+export default AudioPlayer;
