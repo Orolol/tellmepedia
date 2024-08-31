@@ -22,14 +22,17 @@ function AudioList() {
   };
 
   const handleDownload = async (file) => {
+    console.log('Download clicked for file:', file);
     if (!file || !file.filename) {
       console.error('Invalid file or filename');
       return;
     }
     try {
+      console.log('Attempting to download:', `http://localhost:5000/download_audio/${file.filename}`);
       const response = await axios.get(`http://localhost:5000/download_audio/${file.filename}`, {
         responseType: 'blob',
       });
+      console.log('Download response received:', response);
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
@@ -38,6 +41,7 @@ function AudioList() {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
+      console.log('Download process completed');
     } catch (error) {
       console.error('Error downloading audio:', error);
     }
@@ -52,7 +56,12 @@ function AudioList() {
           {audioFiles.map((file, index) => (
             <li key={index}>
               {file.title} ({file.lang})
-              <button onClick={() => handleDownload(file)}>Download</button>
+              <button onClick={(e) => {
+                e.preventDefault();
+                handleDownload(file);
+              }}>
+                Download
+              </button>
             </li>
           ))}
         </ul>
