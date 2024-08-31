@@ -187,27 +187,6 @@ li {
   color: var(--secondary-color);
 }
 
-.rating-section {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-}
-
-.rating-section input {
-  width: 50px;
-}
-
-.rating-section button {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.9rem;
-}
-
-.rating-section p {
-  margin: 0;
-  font-size: 0.9rem;
-}
-
 @media (max-width: 768px) {
   .container {
     grid-template-columns: 1fr;
@@ -220,10 +199,5 @@ li {
 
   .audio-file-actions {
     margin-top: 0.5rem;
-  }
-
-  .rating-section {
-    width: 100%;
-    justify-content: space-between;
   }
 }
