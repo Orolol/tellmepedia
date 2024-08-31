@@ -3,11 +3,17 @@ import axios from 'axios';
 
 function AudioList() {
   const [audioFiles, setAudioFiles] = useState([]);
+  const [filteredAudioFiles, setFilteredAudioFiles] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchAudioFiles();
   }, []);
+
+  useEffect(() => {
+    filterAudioFiles();
+  }, [audioFiles, searchQuery]);
 
   const fetchAudioFiles = async () => {
     setIsLoading(true);
@@ -19,6 +25,18 @@ function AudioList() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const filterAudioFiles = () => {
+    const filtered = audioFiles.filter((file) =>
+      file.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      file.lang.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    setFilteredAudioFiles(filtered);
+  };
+
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value);
   };
 
   const handleDownload = async (file) => {
@@ -66,11 +84,20 @@ function AudioList() {
 
   return (
     <div className="audio-list">
+      <div className="search-bar">
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={handleSearchChange}
+          placeholder="Search audio files by title or language"
+          className="search-input"
+        />
+      </div>
       {isLoading ? (
         <p className="loading">Loading audio files...</p>
       ) : (
         <ul className="audio-files">
-          {audioFiles.map((file, index) => (
+          {filteredAudioFiles.map((file, index) => (
             <li key={index} className="audio-file-item">
               <div className="audio-file-info">
                 <span className="audio-file-title">{file.title}</span>

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import AudioGenerator from './components/AudioGenerator';
 import AudioList from './components/AudioList';
-import AudioSearch from './components/AudioSearch';
 import './App.css';
 
 function App() {
@@ -20,7 +19,6 @@ function App() {
         </section>
         <section className="section">
           <h2>Audio List</h2>
-          <AudioSearch />
           <AudioList />
         </section>
       </main>
