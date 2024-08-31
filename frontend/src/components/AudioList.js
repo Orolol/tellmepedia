@@ -91,10 +91,21 @@ function AudioList({ generatedFile }) {
     }
   };
 
+  const [audio, setAudio] = useState(null);
+
   const handlePlay = async (file) => {
     if (currentlyPlaying === file.title) {
+      if (audio) {
+        audio.pause();
+        audio.currentTime = 0;
+      }
       setCurrentlyPlaying(null);
       return;
+    }
+
+    if (audio) {
+      audio.pause();
+      audio.currentTime = 0;
     }
 
     try {
@@ -104,10 +115,14 @@ function AudioList({ generatedFile }) {
       });
       const audioBlob = new Blob([response.data], { type: 'audio/wav' });
       const audioUrl = URL.createObjectURL(audioBlob);
-      const audio = new Audio(audioUrl);
-      audio.play();
+      const newAudio = new Audio(audioUrl);
+      setAudio(newAudio);
+      newAudio.play();
       setCurrentlyPlaying(file.title);
-      audio.onended = () => setCurrentlyPlaying(null);
+      newAudio.onended = () => {
+        setCurrentlyPlaying(null);
+        URL.revokeObjectURL(audioUrl);
+      };
     } catch (error) {
       console.error('Error playing audio:', error);
     }
