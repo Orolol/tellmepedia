@@ -1,6 +1,6 @@
 import multiprocessing
 from flask import Flask
-from api.routes import init_routes
+from routes import init_routes
 
 # Set the start method to 'spawn'
 multiprocessing.set_start_method('spawn', force=True)

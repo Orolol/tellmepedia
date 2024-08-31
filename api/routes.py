@@ -1,8 +1,8 @@
 from flask import request, jsonify, send_file, abort
-from api.wikipedia_handler import extract_wiki_content
-from api.audio_generator import generate_audio_file
-from api.file_handler import get_safe_filename, save_text, save_audio, load_audio, load_text, list_audio_files
-from api.gpt_handler import rewrite_content_with_gpt4
+from wikipedia_handler import extract_wiki_content
+from audio_generator import generate_audio_file
+from file_handler import get_safe_filename, save_text, save_audio, load_audio, load_text, list_audio_files
+from gpt_handler import rewrite_content_with_gpt4
 
 def init_routes(app):
     @app.route('/generate_audio', methods=['POST'])
