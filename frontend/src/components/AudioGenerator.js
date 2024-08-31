@@ -34,7 +34,6 @@ function AudioGenerator({ setGeneratedFile }) {
 
   return (
     <div>
-      <h2>Generate Audio</h2>
       <form onSubmit={handleSubmit}>
         <input
           type="text"
