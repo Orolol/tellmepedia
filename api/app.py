@@ -3,7 +3,7 @@ import multiprocessing
 # Set the start method to 'spawn'
 multiprocessing.set_start_method('spawn', force=True)
 
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, abort
 import os
 import pathlib
 import wikipedia
@@ -151,7 +151,7 @@ def generate_audio_from_wiki():
         existing_audio = load_audio(safe_filename)
         if existing_audio:
             print("Using existing audio file")
-            return send_file(existing_audio, mimetype='audio/wav', as_attachment=True, download_name='wiki_audio.wav')
+            return jsonify({"filename": f"{safe_filename}.wav"})
     
     existing_text = load_text(safe_filename)
     if existing_text and not force_regenerate:
@@ -171,17 +171,35 @@ def generate_audio_from_wiki():
     
     save_audio(output_filename, safe_filename)
 
-    response = send_file("../" + output_filename, mimetype='audio/wav', as_attachment=True, download_name='wiki_audio.wav')
-    response.headers['X-Temp-File'] = output_filename
-    
-    return response
+    return jsonify({"filename": f"{safe_filename}.wav"})
 
-@app.after_request
-def cleanup(response):
-    temp_file = response.headers.get('X-Temp-File')
-    if temp_file and os.path.exists(temp_file):
-        os.remove(temp_file)
-    return response
+@app.route('/list_audio_files', methods=['GET'])
+def list_audio_files():
+    audio_files = []
+    audio_dir = pathlib.Path("saved_audio")
+    for file in audio_dir.glob("*.wav"):
+        filename = file.stem
+        parts = filename.rsplit('_', 1)
+        title = '_'.join(parts[:-1])
+        lang = parts[-1]
+        audio_files.append({"title": title, "lang": lang})
+    return jsonify(audio_files)
+
+@app.route('/download_audio', methods=['GET'])
+def download_audio():
+    title = request.args.get('title')
+    lang = request.args.get('lang', 'en')
+    if not title:
+        return jsonify({"error": "Missing title parameter"}), 400
+    
+    safe_filename = get_safe_filename(title, lang)
+    audio_file = load_audio(safe_filename)
+    
+    if audio_file:
+        return send_file(audio_file, mimetype='audio/wav', as_attachment=True, download_name=f'{safe_filename}.wav')
+    else:
+        abort(404, description="Audio file not found")
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=False)
