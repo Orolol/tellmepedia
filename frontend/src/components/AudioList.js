@@ -28,8 +28,8 @@ function AudioList() {
       return;
     }
     try {
-      console.log('Attempting to download:', `http://localhost:5000/download_audio/${file.filename}`);
-      const response = await axios.get(`http://localhost:5000/download_audio/${file.filename}`, {
+      console.log('Attempting to download:', `http://localhost:5000/download_audio?title=${encodeURIComponent(file.title)}&lang=${file.lang}`);
+      const response = await axios.get(`http://localhost:5000/download_audio?title=${encodeURIComponent(file.title)}&lang=${file.lang}`, {
         responseType: 'blob',
       });
       console.log('Download response received:', response);
