@@ -101,29 +101,25 @@ function AudioList({ generatedFile }) {
           className="search-input"
         />
       </div>
-      {isLoading ? (
-        <p className="loading">Loading audio files...</p>
-      ) : (
-        <ul className="audio-files">
-          {filteredAudioFiles.map((file, index) => (
-            <li key={index} className="audio-file-item">
-              <div className="audio-file-info">
-                <span className="audio-file-title">{file.title}</span>
-                <span className="audio-file-lang">({file.lang})</span>
-              </div>
-              <button
-                className="download-button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleDownload(file);
-                }}
-              >
-                Download
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      <ul className="audio-files">
+        {filteredAudioFiles.map((file, index) => (
+          <li key={index} className="audio-file-item">
+            <div className="audio-file-info">
+              <span className="audio-file-title">{file.title}</span>
+              <span className="audio-file-lang">({file.lang})</span>
+            </div>
+            <button
+              className="download-button"
+              onClick={(e) => {
+                e.preventDefault();
+                handleDownload(file);
+              }}
+            >
+              Download
+            </button>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
