@@ -21,7 +21,7 @@ function AudioList({ generatedFile }) {
 
   useEffect(() => {
     fetchAudioFiles();
-    const intervalId = setInterval(fetchAudioFiles, 10000);
+    const intervalId = setInterval(fetchAudioFiles, 30000);
     return () => clearInterval(intervalId);
   }, [fetchAudioFiles]);
 
