@@ -6,6 +6,7 @@ function AudioList({ generatedFile }) {
   const [filteredAudioFiles, setFilteredAudioFiles] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
 
   const fetchAudioFiles = useCallback(async () => {
     setIsLoading(true);
@@ -90,6 +91,28 @@ function AudioList({ generatedFile }) {
     }
   };
 
+  const handlePlay = async (file) => {
+    if (currentlyPlaying === file.title) {
+      setCurrentlyPlaying(null);
+      return;
+    }
+
+    try {
+      const downloadUrl = `http://localhost:5000/download_audio?title=${encodeURIComponent(file.title)}&lang=${file.lang}`;
+      const response = await axios.get(downloadUrl, {
+        responseType: 'blob',
+      });
+      const audioBlob = new Blob([response.data], { type: 'audio/wav' });
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      audio.play();
+      setCurrentlyPlaying(file.title);
+      audio.onended = () => setCurrentlyPlaying(null);
+    } catch (error) {
+      console.error('Error playing audio:', error);
+    }
+  };
+
   return (
     <div className="audio-list">
       <div className="search-bar">
@@ -108,15 +131,23 @@ function AudioList({ generatedFile }) {
               <span className="audio-file-title">{file.title}</span>
               <span className="audio-file-lang">({file.lang})</span>
             </div>
-            <button
-              className="download-button"
-              onClick={(e) => {
-                e.preventDefault();
-                handleDownload(file);
-              }}
-            >
-              Download
-            </button>
+            <div className="audio-file-actions">
+              <button
+                className="play-button"
+                onClick={() => handlePlay(file)}
+              >
+                {currentlyPlaying === file.title ? 'Stop' : 'Play'}
+              </button>
+              <button
+                className="download-button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleDownload(file);
+                }}
+              >
+                Download
+              </button>
+            </div>
           </li>
         ))}
       </ul>
