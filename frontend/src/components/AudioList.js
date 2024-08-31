@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 
-function AudioList({ generatedFile }) {
+function AudioList({ generatedFile, setCurrentlyPlaying }) {
   const [audioFiles, setAudioFiles] = useState([]);
   const [filteredAudioFiles, setFilteredAudioFiles] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
+  const [audio, setAudio] = useState(null);
 
   const fetchAudioFiles = useCallback(async () => {
     setIsLoading(true);
@@ -94,18 +94,20 @@ function AudioList({ generatedFile }) {
   const [audio, setAudio] = useState(null);
 
   const handlePlay = async (file) => {
-    if (currentlyPlaying === file.title) {
-      if (audio) {
+    if (audio && audio.src && audio.src.includes(encodeURIComponent(file.title))) {
+      if (audio.paused) {
+        audio.play();
+        setCurrentlyPlaying(file.title);
+      } else {
         audio.pause();
-        audio.currentTime = 0;
+        setCurrentlyPlaying(null);
       }
-      setCurrentlyPlaying(null);
       return;
     }
 
     if (audio) {
       audio.pause();
-      audio.currentTime = 0;
+      URL.revokeObjectURL(audio.src);
     }
 
     try {
@@ -151,7 +153,7 @@ function AudioList({ generatedFile }) {
                 className="play-button"
                 onClick={() => handlePlay(file)}
               >
-                {currentlyPlaying === file.title ? 'Stop' : 'Play'}
+                {audio && audio.src && audio.src.includes(encodeURIComponent(file.title)) && !audio.paused ? 'Pause' : 'Play'}
               </button>
               <button
                 className="download-button"

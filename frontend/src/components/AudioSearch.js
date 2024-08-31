@@ -36,3 +36,18 @@ function AudioSearch() {
 }
 
 export default AudioSearch;
+import React from 'react';
+
+function AudioPlayer({ currentlyPlaying }) {
+  return (
+    <div className="audio-player">
+      {currentlyPlaying ? (
+        <p>Now playing: {currentlyPlaying}</p>
+      ) : (
+        <p>Play an audio to start</p>
+      )}
+    </div>
+  );
+}
+
+export default AudioPlayer;
