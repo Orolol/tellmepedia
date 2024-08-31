@@ -23,20 +23,33 @@ function AudioList() {
 
   const handleDownload = async (file) => {
     console.log('Download clicked for file:', file);
-    if (!file || !file.filename) {
-      console.error('Invalid file or filename');
+    if (!file) {
+      console.error('Invalid file object');
+      return;
+    }
+    if (!file.title || !file.lang) {
+      console.error('Invalid file properties:', file);
       return;
     }
     try {
-      console.log('Attempting to download:', `http://localhost:5000/download_audio?title=${encodeURIComponent(file.title)}&lang=${file.lang}`);
-      const response = await axios.get(`http://localhost:5000/download_audio?title=${encodeURIComponent(file.title)}&lang=${file.lang}`, {
+      const downloadUrl = `http://localhost:5000/download_audio?title=${encodeURIComponent(file.title)}&lang=${file.lang}`;
+      console.log('Attempting to download:', downloadUrl);
+      const response = await axios.get(downloadUrl, {
         responseType: 'blob',
       });
       console.log('Download response received:', response);
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = file.title + '.wav';
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="?(.+)"?/i);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', file.filename);
+      link.setAttribute('download', filename);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -44,6 +57,10 @@ function AudioList() {
       console.log('Download process completed');
     } catch (error) {
       console.error('Error downloading audio:', error);
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+        console.error('Error status:', error.response.status);
+      }
     }
   };
 
