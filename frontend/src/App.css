@@ -156,6 +156,13 @@ li {
   background-color: #e09400;
 }
 
+.or-separator {
+  display: inline-block;
+  margin: 0 10px;
+  font-weight: bold;
+  color: var(--secondary-color);
+}
+
 @media (max-width: 768px) {
   .container {
     grid-template-columns: 1fr;

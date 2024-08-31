@@ -41,6 +41,7 @@ function AudioGenerator({ setGeneratedFile }) {
           onChange={(e) => setWikiUrl(e.target.value)}
           placeholder="Wikipedia URL"
         />
+        <span className="or-separator">OR</span>
         <input
           type="text"
           value={title}
