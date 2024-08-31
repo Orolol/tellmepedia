@@ -1,8 +1,8 @@
 from flask import request, jsonify, send_file, abort
-from wikipedia_handler import extract_wiki_content
-from audio_generator import generate_audio_file
-from file_handler import get_safe_filename, save_text, save_audio, load_audio, load_text, list_audio_files
-from gpt_handler import rewrite_content_with_gpt4
+from api.wikipedia_handler import extract_wiki_content
+from api.audio_generator import generate_audio_file
+from api.file_handler import get_safe_filename, save_text, save_audio, load_audio, load_text, list_audio_files
+from api.gpt_handler import rewrite_content_with_gpt4
 
 def init_routes(app):
     from urllib.parse import urlparse, unquote
@@ -59,6 +59,7 @@ def init_routes(app):
 
     @app.route('/list_audio_files', methods=['GET'])
     def list_audio_files_route():
+        print("List audio files", list_audio_files())
         return jsonify(list_audio_files())
 
     @app.route('/download_audio', methods=['GET'])
@@ -70,8 +71,8 @@ def init_routes(app):
         
         safe_filename = get_safe_filename(title, lang)
         audio_file = load_audio(safe_filename)
-        
+        print(audio_file)
         if audio_file:
-            return send_file(audio_file, mimetype='audio/wav', as_attachment=True, download_name=f'{safe_filename}.wav')
+            return send_file("../" + audio_file, mimetype='audio/wav', as_attachment=True, download_name=f'{safe_filename}.wav')
         else:
             abort(404, description="Audio file not found")
