@@ -67,16 +67,22 @@ function AudioList() {
   return (
     <div className="audio-list">
       {isLoading ? (
-        <p>Loading audio files...</p>
+        <p className="loading">Loading audio files...</p>
       ) : (
-        <ul>
+        <ul className="audio-files">
           {audioFiles.map((file, index) => (
-            <li key={index}>
-              {file.title} ({file.lang})
-              <button onClick={(e) => {
-                e.preventDefault();
-                handleDownload(file);
-              }}>
+            <li key={index} className="audio-file-item">
+              <div className="audio-file-info">
+                <span className="audio-file-title">{file.title}</span>
+                <span className="audio-file-lang">({file.lang})</span>
+              </div>
+              <button
+                className="download-button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleDownload(file);
+                }}
+              >
                 Download
               </button>
             </li>
