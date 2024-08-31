@@ -29,6 +29,10 @@ function AudioGenerator({ setGeneratedFile }) {
       console.error('Error generating audio:', error);
     } finally {
       setIsLoading(false);
+      // Clean inputs after generation
+      setTitle('');
+      setWikiUrl('');
+      setLang('en');
     }
   };
 
@@ -40,6 +44,7 @@ function AudioGenerator({ setGeneratedFile }) {
           value={wikiUrl}
           onChange={(e) => setWikiUrl(e.target.value)}
           placeholder="Wikipedia URL"
+          disabled={isLoading}
         />
         <span className="or-separator">OR</span>
         <input
@@ -48,8 +53,13 @@ function AudioGenerator({ setGeneratedFile }) {
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Wikipedia Title"
           required={!wikiUrl}
+          disabled={isLoading}
         />
-        <select value={lang} onChange={(e) => setLang(e.target.value)}>
+        <select 
+          value={lang} 
+          onChange={(e) => setLang(e.target.value)}
+          disabled={isLoading}
+        >
           <option value="en">English</option>
           <option value="fr">French</option>
           <option value="es">Spanish</option>
