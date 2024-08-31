@@ -171,6 +171,23 @@ li {
   background-color: #3a7bc8;
 }
 
+.share-section {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 10px;
+}
+
+.share-section > * {
+  margin-right: 10px;
+}
+
+.share-section button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
 .or-separator {
   display: inline-block;
   margin: 0 10px;
