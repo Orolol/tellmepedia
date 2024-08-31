@@ -29,6 +29,8 @@ function AudioDownloader() {
       link.setAttribute('download', selectedFile);
       document.body.appendChild(link);
       link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Error downloading audio:', error);
     }
@@ -39,7 +41,6 @@ function AudioDownloader() {
       <select 
         value={selectedFile} 
         onChange={(e) => setSelectedFile(e.target.value)}
-        style={{ marginBottom: '1rem', padding: '0.5rem', width: '100%' }}
       >
         <option value="">Select a file</option>
         {audioFiles.map((file, index) => (
