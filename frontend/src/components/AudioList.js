@@ -6,20 +6,38 @@ function AudioList() {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    const fetchAudioFiles = async () => {
-      setIsLoading(true);
-      try {
-        const response = await axios.get('http://localhost:5000/list_audio_files');
-        setAudioFiles(response.data);
-      } catch (error) {
-        console.error('Error fetching audio files:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchAudioFiles();
   }, []);
+
+  const fetchAudioFiles = async () => {
+    setIsLoading(true);
+    try {
+      const response = await axios.get('http://localhost:5000/list_audio_files');
+      setAudioFiles(response.data);
+    } catch (error) {
+      console.error('Error fetching audio files:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDownload = async (filename) => {
+    try {
+      const response = await axios.get(`http://localhost:5000/download_audio/${filename}`, {
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading audio:', error);
+    }
+  };
 
   return (
     <div className="audio-list">
@@ -28,7 +46,10 @@ function AudioList() {
       ) : (
         <ul>
           {audioFiles.map((file, index) => (
-            <li key={index}>{file.title} ({file.lang})</li>
+            <li key={index}>
+              {file.title} ({file.lang})
+              <button onClick={() => handleDownload(file.filename)}>Download</button>
+            </li>
           ))}
         </ul>
       )}

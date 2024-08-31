@@ -3,37 +3,16 @@ import axios from 'axios';
 
 function AudioSearch() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [audioFiles, setAudioFiles] = useState([]);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [audioPlayer, setAudioPlayer] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSearch = async () => {
     setIsLoading(true);
     try {
       const response = await axios.get(`http://localhost:5000/search_audio?query=${searchQuery}`);
-      setAudioFiles(response.data);
+      // You might want to pass this data to a parent component or use a state management solution
+      console.log(response.data);
     } catch (error) {
       console.error('Error searching audio:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handlePlay = async (filename) => {
-    setIsLoading(true);
-    try {
-      const response = await axios.get(`http://localhost:5000/play_audio/${filename}`, {
-        responseType: 'blob',
-      });
-
-      // Create a new audio player and set the source
-      const audioPlayer = new Audio(URL.createObjectURL(response.data));
-      setAudioPlayer(audioPlayer);
-      setSelectedFile(filename);
-      audioPlayer.play();
-    } catch (error) {
-      console.error('Error playing audio:', error);
     } finally {
       setIsLoading(false);
     }
@@ -52,17 +31,6 @@ function AudioSearch() {
           {isLoading ? 'Searching...' : 'Search'}
         </button>
       </div>
-
-      <h3>Search Results</h3>
-      <ul className="search-results">
-        {audioFiles.map((file, index) => (
-          <li key={index}>
-            <button onClick={() => handlePlay(file.filename)} disabled={isLoading}>
-              {file.title} ({file.lang}) {selectedFile === file.filename && '(Playing)'}
-            </button>
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }

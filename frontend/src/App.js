@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import AudioGenerator from './components/AudioGenerator';
 import AudioList from './components/AudioList';
-import AudioDownloader from './components/AudioDownloader';
 import AudioSearch from './components/AudioSearch';
 import './App.css';
 
@@ -20,15 +19,8 @@ function App() {
           {generatedFile && <p className="generated-file">Generated file: {generatedFile}</p>}
         </section>
         <section className="section">
-          <h2>Download Audio</h2>
-          <AudioDownloader />
-        </section>
-        <section className="section">
-          <h2>Search and Play Audio</h2>
-          <AudioSearch />
-        </section>
-        <section className="section">
           <h2>Audio List</h2>
+          <AudioSearch />
           <AudioList />
         </section>
       </main>

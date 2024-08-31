@@ -4,8 +4,6 @@ import axios from 'axios';
 function AudioGenerator({ setGeneratedFile }) {
   const [title, setTitle] = useState('');
   const [lang, setLang] = useState('en');
-  const [size, setSize] = useState(0);
-  const [forceRegenerate, setForceRegenerate] = useState(false);
   const [wikiUrl, setWikiUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -24,9 +22,7 @@ function AudioGenerator({ setGeneratedFile }) {
 
       const response = await axios.post('http://localhost:5000/generate_audio', {
         title: submissionTitle,
-        lang: submissionLang,
-        size: parseInt(size),
-        force_regenerate: forceRegenerate
+        lang: submissionLang
       });
       setGeneratedFile(response.data.filename);
     } catch (error) {
@@ -57,20 +53,6 @@ function AudioGenerator({ setGeneratedFile }) {
           <option value="fr">French</option>
           <option value="es">Spanish</option>
         </select>
-        <input
-          type="number"
-          value={size}
-          onChange={(e) => setSize(e.target.value)}
-          placeholder="Size"
-        />
-        <label className="checkbox-label">
-          <input
-            type="checkbox"
-            checked={forceRegenerate}
-            onChange={(e) => setForceRegenerate(e.target.checked)}
-          />
-          Force Regenerate
-        </label>
         <button type="submit" disabled={isLoading}>
           {isLoading ? 'Generating...' : 'Generate Audio'}
         </button>
