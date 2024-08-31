@@ -5,6 +5,8 @@ from file_handler import get_safe_filename, save_text, save_audio, load_audio, l
 from gpt_handler import rewrite_content_with_gpt4
 
 def init_routes(app):
+    from urllib.parse import urlparse, unquote
+
     @app.route('/generate_audio', methods=['POST'])
     def generate_audio_from_wiki():
         data = request.json
@@ -12,23 +14,29 @@ def init_routes(app):
         lang = data.get('lang', 'en')
         size = data.get('size', 0)
         force_regenerate = data.get('force_regenerate', False)
-        
+    
+        # Check if the title is a Wikipedia URL
+        if title.startswith('http'):
+            parsed_url = urlparse(title)
+            lang = parsed_url.netloc.split('.')[0]
+            title = unquote(parsed_url.path.split('/')[-1].replace('_', ' '))
+    
         print(f"Wikipedia Title: {title}")
         print(f"Language: {lang}")
         print(f"Size: {size}")
         print(f"Force Regenerate: {force_regenerate}")
-        
+    
         if not title:
             return jsonify({"error": "Missing Wikipedia page title"}), 400
-        
+    
         safe_filename = get_safe_filename(title, lang)
-        
+    
         if not force_regenerate:
             existing_audio = load_audio(safe_filename)
             if existing_audio:
                 print("Using existing audio file")
                 return jsonify({"filename": f"{safe_filename}.wav"})
-        
+    
         existing_text = load_text(safe_filename)
         if existing_text and not force_regenerate:
             print("Using existing text content")
@@ -38,13 +46,13 @@ def init_routes(app):
             if content.startswith("Error:"):
                 return jsonify({"error": content}), 400
             save_text(content, safe_filename)
-        
+    
         rewritten_content = rewrite_content_with_gpt4(content)
         save_text(rewritten_content, f"{safe_filename}_rewritten")
-        
+    
         output_filename = generate_audio_file(rewritten_content, lang)
         print("Audio fusionné généré :", output_filename)
-        
+    
         save_audio(output_filename, safe_filename)
 
         return jsonify({"filename": f"{safe_filename}.wav"})

@@ -6,13 +6,23 @@ function AudioGenerator({ setGeneratedFile }) {
   const [lang, setLang] = useState('en');
   const [size, setSize] = useState(0);
   const [forceRegenerate, setForceRegenerate] = useState(false);
+  const [wikiUrl, setWikiUrl] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      let submissionTitle = title;
+      let submissionLang = lang;
+
+      if (wikiUrl) {
+        const urlParts = new URL(wikiUrl);
+        submissionLang = urlParts.hostname.split('.')[0];
+        submissionTitle = decodeURIComponent(urlParts.pathname.split('/').pop().replace(/_/g, ' '));
+      }
+
       const response = await axios.post('http://localhost:5000/generate_audio', {
-        title,
-        lang,
+        title: submissionTitle,
+        lang: submissionLang,
         size: parseInt(size),
         force_regenerate: forceRegenerate
       });
@@ -28,10 +38,16 @@ function AudioGenerator({ setGeneratedFile }) {
       <form onSubmit={handleSubmit}>
         <input
           type="text"
+          value={wikiUrl}
+          onChange={(e) => setWikiUrl(e.target.value)}
+          placeholder="Wikipedia URL (optional)"
+        />
+        <input
+          type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Wikipedia Title"
-          required
+          required={!wikiUrl}
         />
         <select value={lang} onChange={(e) => setLang(e.target.value)}>
           <option value="en">English</option>
