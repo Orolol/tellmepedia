@@ -51,22 +51,15 @@ function AudioList({ generatedFile, setCurrentlyPlaying }) {
   };
 
   const handleDownload = async (file) => {
-    console.log('Download clicked for file:', file);
-    if (!file) {
-      console.error('Invalid file object');
-      return;
-    }
-    if (!file.title || !file.lang) {
-      console.error('Invalid file properties:', file);
+    if (!file || !file.title || !file.lang) {
+      console.error('Invalid file object or properties');
       return;
     }
     try {
       const downloadUrl = `http://localhost:5000/download_audio?title=${encodeURIComponent(file.title)}&lang=${file.lang}`;
-      console.log('Attempting to download:', downloadUrl);
       const response = await axios.get(downloadUrl, {
         responseType: 'blob',
       });
-      console.log('Download response received:', response);
       const contentDisposition = response.headers['content-disposition'];
       let filename = file.title + '.wav';
       if (contentDisposition) {
@@ -83,13 +76,8 @@ function AudioList({ generatedFile, setCurrentlyPlaying }) {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-      console.log('Download process completed');
     } catch (error) {
       console.error('Error downloading audio:', error);
-      if (error.response) {
-        console.error('Error response:', error.response.data);
-        console.error('Error status:', error.response.status);
-      }
     }
   };
 
