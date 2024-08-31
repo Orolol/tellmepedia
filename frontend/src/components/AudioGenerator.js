@@ -39,7 +39,7 @@ function AudioGenerator({ setGeneratedFile }) {
           type="text"
           value={wikiUrl}
           onChange={(e) => setWikiUrl(e.target.value)}
-          placeholder="Wikipedia URL (optional)"
+          placeholder="Wikipedia URL"
         />
         <input
           type="text"
