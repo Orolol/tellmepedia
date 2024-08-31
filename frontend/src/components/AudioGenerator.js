@@ -7,9 +7,11 @@ function AudioGenerator({ setGeneratedFile }) {
   const [size, setSize] = useState(0);
   const [forceRegenerate, setForceRegenerate] = useState(false);
   const [wikiUrl, setWikiUrl] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     try {
       let submissionTitle = title;
       let submissionLang = lang;
@@ -29,6 +31,8 @@ function AudioGenerator({ setGeneratedFile }) {
       setGeneratedFile(response.data.filename);
     } catch (error) {
       console.error('Error generating audio:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -59,7 +63,7 @@ function AudioGenerator({ setGeneratedFile }) {
           onChange={(e) => setSize(e.target.value)}
           placeholder="Size"
         />
-        <label>
+        <label className="checkbox-label">
           <input
             type="checkbox"
             checked={forceRegenerate}
@@ -67,7 +71,9 @@ function AudioGenerator({ setGeneratedFile }) {
           />
           Force Regenerate
         </label>
-        <button type="submit">Generate Audio</button>
+        <button type="submit" disabled={isLoading}>
+          {isLoading ? 'Generating...' : 'Generate Audio'}
+        </button>
       </form>
     </div>
   );

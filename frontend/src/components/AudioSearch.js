@@ -6,17 +6,22 @@ function AudioSearch() {
   const [audioFiles, setAudioFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [audioPlayer, setAudioPlayer] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSearch = async () => {
+    setIsLoading(true);
     try {
       const response = await axios.get(`http://localhost:5000/search_audio?query=${searchQuery}`);
       setAudioFiles(response.data);
     } catch (error) {
       console.error('Error searching audio:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handlePlay = async (filename) => {
+    setIsLoading(true);
     try {
       const response = await axios.get(`http://localhost:5000/play_audio/${filename}`, {
         responseType: 'blob',
@@ -29,24 +34,30 @@ function AudioSearch() {
       audioPlayer.play();
     } catch (error) {
       console.error('Error playing audio:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div>
-      <input
-        type="text"
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        placeholder="Search audio files"
-      />
-      <button onClick={handleSearch}>Search</button>
+    <div className="audio-search">
+      <div className="search-input">
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search audio files"
+        />
+        <button onClick={handleSearch} disabled={isLoading}>
+          {isLoading ? 'Searching...' : 'Search'}
+        </button>
+      </div>
 
       <h3>Search Results</h3>
-      <ul>
+      <ul className="search-results">
         {audioFiles.map((file, index) => (
           <li key={index}>
-            <button onClick={() => handlePlay(file.filename)}>
+            <button onClick={() => handlePlay(file.filename)} disabled={isLoading}>
               {file.title} ({file.lang}) {selectedFile === file.filename && '(Playing)'}
             </button>
           </li>

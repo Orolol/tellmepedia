@@ -17,11 +17,7 @@ function App() {
         <section className="section">
           <h2>Generate Audio</h2>
           <AudioGenerator setGeneratedFile={setGeneratedFile} />
-          {generatedFile && <p>Generated file: {generatedFile}</p>}
-        </section>
-        <section className="section">
-          <h2>Audio List</h2>
-          <AudioList />
+          {generatedFile && <p className="generated-file">Generated file: {generatedFile}</p>}
         </section>
         <section className="section">
           <h2>Download Audio</h2>
@@ -30,6 +26,10 @@ function App() {
         <section className="section">
           <h2>Search and Play Audio</h2>
           <AudioSearch />
+        </section>
+        <section className="section">
+          <h2>Audio List</h2>
+          <AudioList />
         </section>
       </main>
     </div>

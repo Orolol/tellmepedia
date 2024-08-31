@@ -4,14 +4,18 @@ import axios from 'axios';
 function AudioDownloader() {
   const [selectedFile, setSelectedFile] = useState('');
   const [audioFiles, setAudioFiles] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const fetchAudioFiles = async () => {
+      setIsLoading(true);
       try {
         const response = await axios.get('http://localhost:5000/list_audio_files');
         setAudioFiles(response.data);
       } catch (error) {
         console.error('Error fetching audio files:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -19,6 +23,7 @@ function AudioDownloader() {
   }, []);
 
   const handleDownload = async () => {
+    setIsLoading(true);
     try {
       const response = await axios.get(`http://localhost:5000/download_audio/${selectedFile}`, {
         responseType: 'blob',
@@ -33,22 +38,25 @@ function AudioDownloader() {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Error downloading audio:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div>
+    <div className="audio-downloader">
       <select 
         value={selectedFile} 
         onChange={(e) => setSelectedFile(e.target.value)}
+        disabled={isLoading}
       >
         <option value="">Select a file</option>
         {audioFiles.map((file, index) => (
           <option key={index} value={file.filename}>{file.title} ({file.lang})</option>
         ))}
       </select>
-      <button onClick={handleDownload} disabled={!selectedFile}>
-        Download
+      <button onClick={handleDownload} disabled={!selectedFile || isLoading}>
+        {isLoading ? 'Downloading...' : 'Download'}
       </button>
     </div>
   );
