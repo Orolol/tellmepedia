@@ -144,31 +144,23 @@ li {
 
 .audio-file-actions {
   display: flex;
-  gap: 0.5rem;
+  align-items: center;
+  gap: 1rem;
 }
 
-.play-button,
-.download-button {
-  background-color: var(--secondary-color);
-  color: white;
-  border: none;
-  border-radius: var(--border-radius);
-  padding: 0.5rem 1rem;
+.action-icon {
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  margin: 0 5px;
+  font-size: 1.2em;
+  transition: color 0.3s ease;
 }
 
-.play-button:hover,
-.download-button:hover {
-  background-color: #e09400;
+.play-icon:hover {
+  color: var(--primary-color);
 }
 
-.play-button {
-  background-color: var(--primary-color);
-}
-
-.play-button:hover {
-  background-color: #3a7bc8;
+.download-icon:hover {
+  color: var(--secondary-color);
 }
 
 .share-section {
@@ -195,6 +187,27 @@ li {
   color: var(--secondary-color);
 }
 
+.rating-section {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.rating-section input {
+  width: 50px;
+}
+
+.rating-section button {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.9rem;
+}
+
+.rating-section p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
 @media (max-width: 768px) {
   .container {
     grid-template-columns: 1fr;
@@ -205,8 +218,12 @@ li {
     align-items: flex-start;
   }
 
-  .download-button {
+  .audio-file-actions {
     margin-top: 0.5rem;
-    align-self: flex-end;
+  }
+
+  .rating-section {
+    width: 100%;
+    justify-content: space-between;
   }
 }
