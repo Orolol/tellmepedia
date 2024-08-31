@@ -76,3 +76,18 @@ def init_routes(app):
             return send_file("../" + audio_file, mimetype='audio/wav', as_attachment=True, download_name=f'{safe_filename}.wav')
         else:
             abort(404, description="Audio file not found")
+
+        @app.route('/add_comment', methods=['POST'])
+        def add_comment():
+            data = request.json
+            audio_file = data.get('audioFile')
+            comment = data.get('comment')
+        
+            if not audio_file or not comment:
+                return jsonify({"error": "Missing audio file or comment"}), 400
+        
+            # In a real application, you would save this comment to a database
+            # For now, we'll just return the comment as if it was saved
+            new_comment = {"text": comment, "audioFile": audio_file}
+        
+            return jsonify(new_comment), 201
