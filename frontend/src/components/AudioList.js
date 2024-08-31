@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { FacebookShareButton, TwitterShareButton, LinkedInShareButton } from 'react-share';
-import { FacebookIcon, TwitterIcon, LinkedInIcon } from 'react-share';
 
 function AudioList({ generatedFile, setCurrentlyPlaying }) {
   const [ratingInput, setRatingInput] = useState('');
@@ -144,9 +142,6 @@ function AudioList({ generatedFile, setCurrentlyPlaying }) {
     }
   };
 
-  const getShareUrl = (file) => {
-    return `${window.location.origin}/audio/${encodeURIComponent(file.title)}/${file.lang}`;
-  };
 
   return (
     <div className="audio-list">
@@ -193,17 +188,6 @@ function AudioList({ generatedFile, setCurrentlyPlaying }) {
               />
               <button onClick={() => handleRatingChange(file, ratingInput)}>Rate</button>
               <p>Current rating: {file.rating}</p>
-            </div>
-            <div className="share-section">
-              <FacebookShareButton url={getShareUrl(file)} quote={`Listen to ${file.title} on TellMePedia`}>
-                <FacebookIcon size={32} round />
-              </FacebookShareButton>
-              <TwitterShareButton url={getShareUrl(file)} title={`Listen to ${file.title} on TellMePedia`}>
-                <TwitterIcon size={32} round />
-              </TwitterShareButton>
-              <LinkedInShareButton url={getShareUrl(file)} title={`Listen to ${file.title} on TellMePedia`}>
-                <LinkedInIcon size={32} round />
-              </LinkedInShareButton>
             </div>
           </li>
         ))}
