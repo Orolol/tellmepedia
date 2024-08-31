@@ -19,7 +19,7 @@ function App() {
         </section>
         <section className="section">
           <h2>Audio List</h2>
-          <AudioList />
+          <AudioList generatedFile={generatedFile} />
         </section>
       </main>
     </div>

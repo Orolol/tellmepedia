@@ -1,21 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 
-function AudioList() {
+function AudioList({ generatedFile }) {
   const [audioFiles, setAudioFiles] = useState([]);
   const [filteredAudioFiles, setFilteredAudioFiles] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  useEffect(() => {
-    fetchAudioFiles();
-  }, []);
-
-  useEffect(() => {
-    filterAudioFiles();
-  }, [audioFiles, searchQuery]);
-
-  const fetchAudioFiles = async () => {
+  const fetchAudioFiles = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await axios.get('http://localhost:5000/list_audio_files');
@@ -25,7 +17,23 @@ function AudioList() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchAudioFiles();
+    const intervalId = setInterval(fetchAudioFiles, 10000);
+    return () => clearInterval(intervalId);
+  }, [fetchAudioFiles]);
+
+  useEffect(() => {
+    if (generatedFile) {
+      fetchAudioFiles();
+    }
+  }, [generatedFile, fetchAudioFiles]);
+
+  useEffect(() => {
+    filterAudioFiles();
+  }, [audioFiles, searchQuery]);
 
   const filterAudioFiles = () => {
     const filtered = audioFiles.filter((file) =>
