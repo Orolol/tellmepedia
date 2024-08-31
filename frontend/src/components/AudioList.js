@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faPlay, faPause, faDownload } from '@fortawesome/free-solid-svg-icons';
 
 function AudioList({ generatedFile, setCurrentlyPlaying }) {
   const [ratingInput, setRatingInput] = useState('');
@@ -162,21 +164,19 @@ function AudioList({ generatedFile, setCurrentlyPlaying }) {
               <span className="audio-file-lang">({file.lang})</span>
             </div>
             <div className="audio-file-actions">
-              <button
-                className="play-button"
+              <FontAwesomeIcon
+                icon={audio && audio.src && audio.src.includes(encodeURIComponent(file.title)) && !audio.paused ? faPause : faPlay}
+                className="action-icon play-icon"
                 onClick={() => handlePlay(file)}
-              >
-                {audio && audio.src && audio.src.includes(encodeURIComponent(file.title)) && !audio.paused ? 'Pause' : 'Play'}
-              </button>
-              <button
-                className="download-button"
+              />
+              <FontAwesomeIcon
+                icon={faDownload}
+                className="action-icon download-icon"
                 onClick={(e) => {
                   e.preventDefault();
                   handleDownload(file);
                 }}
-              >
-                Download
-              </button>
+              />
             </div>
             <div className="rating-section">
               <input
