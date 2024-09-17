@@ -1,19 +1,25 @@
 import os
-from openai import OpenAI
 from dotenv import load_dotenv
 import nltk
 from nltk.tokenize import sent_tokenize
+from llama_cpp import Llama
 
 load_dotenv()
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Initialize the Llama model
+llm = Llama.from_pretrained(
+    repo_id="bartowski/Meta-Llama-3.1-8B-Instruct-GGUF",
+    filename="Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf",
+    verbose=True,
+    n_ctx=8192,
+)
 
 def split_content_into_chunks(content):
     nltk.download('punkt', quiet=True)
     sentences = sent_tokenize(content)
     return sentences
 
-def rewrite_content_with_gpt4(content):
+def rewrite_content_with_llama(content):
     system_message = "You are a helpful assistant that rewrites Wikipedia content for audio narration."
     user_instructions = """
     Rewrite the following Wikipedia content:
@@ -28,22 +34,25 @@ def rewrite_content_with_gpt4(content):
     initial_prompt = f"{user_instructions}\n\nOriginal Article:\n{content}"
     
     rewritten_content = ""
+    current_prompt = initial_prompt
     
     while True:
-        response = client.chat.completions.create(
-            model="gpt-4o-2024-08-06",
+        response = llm.create_chat_completion(
             messages=[
                 {"role": "system", "content": system_message},
-                {"role": "user", "content": initial_prompt if not rewritten_content else "Please continue"},
-                *([] if not rewritten_content else [{"role": "assistant", "content": rewritten_content}])
+                {"role": "user", "content": current_prompt}
             ],
-            n=1,
+            max_tokens=4096,  # Adjust as needed
             temperature=0.7,
+            
         )
         
-        rewritten_content += response.choices[0].message.content.strip()
+        new_text = response["choices"][0]["message"]["content"].strip()
+        rewritten_content += new_text
         
-        if response.choices[0].finish_reason != "length":
+        if len(new_text) < 512:  # Adjust condition as needed
             break
+        
+        current_prompt = f"{initial_prompt}\n\n{rewritten_content}\n\nPlease continue"
     
     return rewritten_content

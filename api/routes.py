@@ -2,7 +2,7 @@ from flask import request, jsonify, send_file, abort
 from api.wikipedia_handler import extract_wiki_content
 from api.audio_generator import generate_audio_file
 from api.file_handler import get_safe_filename, save_text, save_audio, load_audio, load_text, list_audio_files
-from api.gpt_handler import rewrite_content_with_gpt4
+from api.gpt_handler import rewrite_content_with_llama  # Updated import
 
 def init_routes(app):
     from urllib.parse import urlparse, unquote
@@ -47,7 +47,7 @@ def init_routes(app):
                 return jsonify({"error": content}), 400
             save_text(content, safe_filename)
     
-        rewritten_content = rewrite_content_with_gpt4(content)
+        rewritten_content = rewrite_content_with_llama(content)  # Updated function call
         save_text(rewritten_content, f"{safe_filename}_rewritten")
     
         output_filename = generate_audio_file(rewritten_content, lang)
@@ -77,17 +77,17 @@ def init_routes(app):
         else:
             abort(404, description="Audio file not found")
 
-        @app.route('/add_comment', methods=['POST'])
-        def add_comment():
-            data = request.json
-            audio_file = data.get('audioFile')
-            comment = data.get('comment')
-        
-            if not audio_file or not comment:
-                return jsonify({"error": "Missing audio file or comment"}), 400
-        
-            # In a real application, you would save this comment to a database
-            # For now, we'll just return the comment as if it was saved
-            new_comment = {"text": comment, "audioFile": audio_file}
-        
-            return jsonify(new_comment), 201
+    @app.route('/add_comment', methods=['POST'])
+    def add_comment():
+        data = request.json
+        audio_file = data.get('audioFile')
+        comment = data.get('comment')
+    
+        if not audio_file or not comment:
+            return jsonify({"error": "Missing audio file or comment"}), 400
+    
+        # In a real application, you would save this comment to a database
+        # For now, we'll just return the comment as if it was saved
+        new_comment = {"text": comment, "audioFile": audio_file}
+    
+        return jsonify(new_comment), 201

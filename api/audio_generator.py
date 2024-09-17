@@ -1,7 +1,6 @@
 from styletts2 import tts
 
-mytts = tts.StyleTTS2(config_path="StyleTTS2/config.yml")
-
+mytts = tts.StyleTTS2()
 SAMPLE_RATE = 22050  # StyleTTS2 default sample rate
 
 def generate_audio_file(text, lang='en'):

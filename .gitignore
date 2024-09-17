@@ -3,3 +3,4 @@
 .aider*
 /saved*
 *.wav
+node_modules

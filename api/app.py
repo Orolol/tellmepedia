@@ -1,7 +1,7 @@
 import multiprocessing
 from flask import Flask
 from flask_cors import CORS
-from routes import init_routes
+from api.routes import init_routes
 
 # Set the start method to 'spawn'
 multiprocessing.set_start_method('spawn', force=True)
