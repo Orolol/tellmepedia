@@ -1,15 +1,18 @@
 :root {
-  --primary-color: #4a90e2;
-  --secondary-color: #f5a623;
-  --background-color: #f0f2f5;
-  --text-color: #333;
-  --border-radius: 8px;
-  --success-color: #4caf50;
-  --error-color: #f44336;
-  --warning-color: #ff9800;
-  --dark-bg: #1a1a1a;
-  --dark-surface: #2d2d2d;
-  --dark-text: #ffffff;
+  --primary-color: #6366f1;
+  --secondary-color: #f59e0b;
+  --background-color: #f8fafc;
+  --text-color: #1e293b;
+  --border-radius: 12px;
+  --success-color: #10b981;
+  --error-color: #ef4444;
+  --warning-color: #f59e0b;
+  --dark-bg: #0f172a;
+  --dark-surface: #1e293b;
+  --dark-text: #f8fafc;
+  --gradient-1: #6366f1;
+  --gradient-2: #8b5cf6;
+  --glass-bg: rgba(255, 255, 255, 0.1);
 }
 
 /* Dark mode styles */
@@ -115,11 +118,18 @@ body {
 }
 
 .section {
-  background-color: white;
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
   border-radius: var(--border-radius);
-  padding: 1.5rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  padding: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.section:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
 }
 
 .main-section {

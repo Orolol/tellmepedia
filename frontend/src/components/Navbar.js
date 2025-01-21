@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaSun, FaMoon, FaHistory, FaStar, FaHome, FaBook } from 'react-icons/fa';
+import { FaBook, FaStar, FaSun, FaMoon } from "react-icons/fa";
 
 function Navbar({ darkMode, setDarkMode, activeTab, setActiveTab }) {
   return (
@@ -13,7 +13,7 @@ function Navbar({ darkMode, setDarkMode, activeTab, setActiveTab }) {
           className={`nav-link ${activeTab === 'generate' ? 'active' : ''}`}
           onClick={() => setActiveTab('generate')}
         >
-          <FaHome /> Generate
+          <FaBook /> Generate
         </button>
         
         <button 
@@ -34,7 +34,7 @@ function Navbar({ darkMode, setDarkMode, activeTab, setActiveTab }) {
           className={`nav-link ${activeTab === 'history' ? 'active' : ''}`}
           onClick={() => setActiveTab('history')}
         >
-          <FaHistory /> History
+          <FaBook /> History
         </button>
       </div>
       

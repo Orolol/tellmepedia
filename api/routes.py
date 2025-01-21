@@ -49,7 +49,7 @@ def init_routes(app):
     
         rewritten_content = rewrite_content_with_llama(content)  # Updated function call
         save_text(rewritten_content, f"{safe_filename}_rewritten")
-    
+        print("Content rewritten, generating audio...")
         output_filename = generate_audio_file(rewritten_content, lang)
         print("Audio fusionné généré :", output_filename)
     
